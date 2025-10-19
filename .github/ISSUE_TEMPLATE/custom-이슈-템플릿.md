@@ -1,8 +1,8 @@
 ---
 name: Custom 이슈 템플릿
 about: issue
-title: "✨feat/\\U0001F33Frefactor/\\U0001F4C3chore/\\U0001F6E0️fix/\\U0001F9EAtest
-  : 이슈"
+title: "✨feat/\U0001F33Frefactor/\U0001F4C3chore/\U0001F6E0️fix/\U0001F9EAtest : 이슈
+  이름 작성"
 labels: ''
 assignees: ''
 
