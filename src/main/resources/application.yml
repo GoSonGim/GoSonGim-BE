@@ -1,0 +1,22 @@
+spring:
+  profiles:
+    include:
+      - datasource
+      #- auth
+      #- s3
+      #- azure
+      #- redis
+
+  config:
+    import: optional:file:.env[.properties]
+
+  jackson:
+    serialization:
+      fail-on-empty-beans: false
+
+server:
+  base-uri: ${SERVER_URI}
+  port: 8080
+
+cors:
+  allowed-origins: http://localhost:3000
