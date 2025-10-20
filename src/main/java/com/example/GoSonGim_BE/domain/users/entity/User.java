@@ -8,6 +8,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.EqualsAndHashCode;
 import org.hibernate.annotations.Comment;
+import org.hibernate.annotations.ColumnDefault;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -30,7 +31,8 @@ public class User extends BaseEntity {
     private String nickname;
 
     @Comment("연속 학습 일수")
-    @Column(name = "streak_days", nullable = false, columnDefinition = "int not null default 0")
+    @Column(name = "streak_days", nullable = false)
+    @ColumnDefault("0")
     private Integer streakDays;
 
     @Comment("마지막 활동 일자")
@@ -38,7 +40,8 @@ public class User extends BaseEntity {
     private LocalDate lastActivityDate;
 
     @Comment("총 학습 성공 횟수")
-    @Column(name = "total_success_count", nullable = false, columnDefinition = "int not null default 0")
+    @Column(name = "total_success_count", nullable = false)
+    @ColumnDefault("0")
     private Integer totalSuccessCount;
 
     @Comment("학습 레벨")
@@ -47,7 +50,8 @@ public class User extends BaseEntity {
     private UserLevel level;
 
     @Comment("소프트 삭제 여부")
-    @Column(name = "is_deleted", nullable = false, columnDefinition = "tinyint(1) not null default 0")
+    @Column(name = "is_deleted", nullable = false)
+    @ColumnDefault("0")
     private Boolean isDeleted;
 
     @Comment("삭제 일시")
