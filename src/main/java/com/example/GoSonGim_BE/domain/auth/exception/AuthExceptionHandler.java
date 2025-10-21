@@ -19,7 +19,7 @@ public class AuthExceptionHandler {
         AuthExceptions.EmailAlreadyUsedException.class,
         AuthExceptions.InvalidEmailFormatException.class,
         AuthExceptions.InvalidCredentialsException.class,
-        AuthExceptions.UserDisabledException.class
+        AuthExceptions.UserDeletedException.class
     })
     public ResponseEntity<ApiErrorResponse> handleAuthExceptions(BaseException e) {
         HttpStatus status = determineStatus(e);
@@ -45,8 +45,8 @@ public class AuthExceptionHandler {
         if (e instanceof AuthExceptions.InvalidCredentialsException) {
             return HttpStatus.UNAUTHORIZED;
         }
-        if (e instanceof AuthExceptions.UserDisabledException) {
-            return HttpStatus.LOCKED;
+        if (e instanceof AuthExceptions.UserDeletedException) {
+            return HttpStatus.GONE;  // 410 Gone - 리소스가 영구적으로 삭제됨
         }
         return HttpStatus.BAD_REQUEST;
     }

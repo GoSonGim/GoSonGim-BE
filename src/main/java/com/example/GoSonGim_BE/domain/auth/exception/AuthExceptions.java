@@ -32,11 +32,11 @@ public class AuthExceptions {
     }
     
     /**
-     * 비활성화된 계정 예외
+     * 탈퇴한 계정 예외
      */
-    public static class UserDisabledException extends BaseException {
-        public UserDisabledException() {
-            super("비활성화된 계정입니다.", "USER_DISABLED");
+    public static class UserDeletedException extends BaseException {
+        public UserDeletedException() {
+            super("탈퇴한 계정입니다.", "USER_DELETED");
         }
     }
 }
