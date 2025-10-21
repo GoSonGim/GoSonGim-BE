@@ -27,7 +27,7 @@ public class User extends BaseEntity {
     private Long id;
 
     @Comment("닉네임")
-    @Column(name = "nickname", nullable = false, length = 50)
+    @Column(name = "nickname", nullable = true, length = 50)
     private String nickname;
 
     @Comment("연속 학습 일수")
