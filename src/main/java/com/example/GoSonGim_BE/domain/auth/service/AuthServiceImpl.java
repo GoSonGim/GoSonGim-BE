@@ -4,8 +4,10 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.example.GoSonGim_BE.domain.auth.dto.request.EmailValidationRequest;
 import com.example.GoSonGim_BE.domain.auth.dto.request.LoginRequest;
 import com.example.GoSonGim_BE.domain.auth.dto.request.SignupRequest;
+import com.example.GoSonGim_BE.domain.auth.dto.response.EmailValidationResponse;
 import com.example.GoSonGim_BE.domain.auth.dto.response.LoginResponse;
 import com.example.GoSonGim_BE.domain.auth.dto.response.SignupResponse;
 import com.example.GoSonGim_BE.domain.auth.dto.response.TokenResponse;
@@ -103,5 +105,14 @@ public class AuthServiceImpl implements AuthService {
         
         // 6. 응답 생성
         return new LoginResponse(tokens, userResponse);
+    }
+    
+    @Override
+    public EmailValidationResponse validateEmail(EmailValidationRequest request) {
+        // 1. 이메일 중복 확인
+        boolean isAvailable = !userLocalCredentialRepository.existsByEmail(request.email());
+        
+        // 2. 응답 생성
+        return new EmailValidationResponse(request.email(), isAvailable);
     }
 }
