@@ -4,7 +4,9 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.example.GoSonGim_BE.domain.auth.dto.request.LoginRequest;
 import com.example.GoSonGim_BE.domain.auth.dto.request.SignupRequest;
+import com.example.GoSonGim_BE.domain.auth.dto.response.LoginResponse;
 import com.example.GoSonGim_BE.domain.auth.dto.response.SignupResponse;
 import com.example.GoSonGim_BE.domain.auth.dto.response.TokenResponse;
 import com.example.GoSonGim_BE.domain.auth.dto.response.UserResponse;
@@ -66,5 +68,35 @@ public class AuthServiceImpl implements AuthService {
 
         // 8. 응답 생성
         return new SignupResponse(tokens, userResponse);
+    }
+    
+    @Override
+    public LoginResponse login(LoginRequest request) {
+        // 1. 이메일로 사용자 조회
+        UserLocalCredential credential = userLocalCredentialRepository.findByEmail(request.email())
+                .orElseThrow(() -> new AuthExceptions.InvalidCredentialsException());
+        
+        // 2. 비밀번호 검증
+        if (!passwordEncoder.matches(request.password(), credential.getPasswordHash())) {
+            throw new AuthExceptions.InvalidCredentialsException();
+        }
+        
+        // 3. JWT 토큰 생성 (일단 더미 값)
+        TokenResponse tokens = new TokenResponse(
+            "dummy_access_token",  // 나중에 실제 JWT로 교체
+            "dummy_refresh_token", // 나중에 실제 JWT로 교체
+            "Bearer",
+            3600,
+            1209600
+        );
+        
+        // 4. 사용자 정보
+        UserResponse userResponse = new UserResponse(
+            credential.getUser().getId(),
+            credential.getEmail()
+        );
+        
+        // 5. 응답 생성
+        return new LoginResponse(tokens, userResponse);
     }
 }
