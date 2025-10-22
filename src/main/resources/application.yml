@@ -20,3 +20,8 @@ server:
 
 cors:
   allowed-origins: http://localhost:3000
+
+logging:
+  level:
+    com.example.GoSonGim_BE: DEBUG
+    org.springframework.security: DEBUG

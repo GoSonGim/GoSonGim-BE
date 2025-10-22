@@ -1,5 +1,6 @@
 package com.example.GoSonGim_BE.domain.users.entity;
 
+import com.example.GoSonGim_BE.domain.users.exception.UserExceptions;
 import com.example.GoSonGim_BE.global.entity.BaseEntity;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
@@ -27,7 +28,7 @@ public class User extends BaseEntity {
     private Long id;
 
     @Comment("닉네임")
-    @Column(name = "nickname", nullable = false, length = 50)
+    @Column(name = "nickname", nullable = true, length = 50)
     private String nickname;
 
     @Comment("연속 학습 일수")
@@ -100,18 +101,46 @@ public class User extends BaseEntity {
 
     /**
      * 소프트 삭제 처리
+     * 
+     * @throws IllegalStateException 이미 삭제된 사용자인 경우
      */
     public void delete() {
+        if (this.isDeleted) {
+            throw new UserExceptions.UserAlreadyDeletedException();
+        }
         this.isDeleted = true;
         this.deletedAt = LocalDateTime.now();
     }
 
     /**
      * 삭제 취소 (복구)
+     * 
+     * @throws UserExceptions.UserNotDeletedException 삭제되지 않은 사용자인 경우
      */
     public void restore() {
+        if (!this.isDeleted) {
+            throw new UserExceptions.UserNotDeletedException();
+        }
         this.isDeleted = false;
         this.deletedAt = null;
+    }
+    
+    /**
+     * 사용자 삭제 상태 확인
+     * 
+     * @return 삭제 여부
+     */
+    public boolean isDeleted() {
+        return Boolean.TRUE.equals(this.isDeleted);
+    }
+    
+    /**
+     * 활성 사용자 여부 확인
+     * 
+     * @return 활성 사용자 여부
+     */
+    public boolean isActive() {
+        return !isDeleted();
     }
 }
 
