@@ -76,8 +76,8 @@ public class AuthServiceImpl implements AuthService {
     @Override
     @Transactional(readOnly = true)
     public LoginResponse login(LoginRequest request) {
-        // 1. 이메일로 사용자 조회
-        UserLocalCredential credential = userLocalCredentialRepository.findByEmail(request.email())
+        // 1. 이메일로 사용자 조회 (Fetch Join으로 User도 함께 조회)
+        UserLocalCredential credential = userLocalCredentialRepository.findByEmailWithUser(request.email())
                 .orElseThrow(() -> new AuthExceptions.InvalidCredentialsException());
         
         // 2. 탈퇴한 계정 체크
