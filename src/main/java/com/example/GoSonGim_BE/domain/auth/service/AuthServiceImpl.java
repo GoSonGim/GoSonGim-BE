@@ -22,7 +22,6 @@ import lombok.RequiredArgsConstructor;
     
 @Service
 @RequiredArgsConstructor
-@Transactional
 public class AuthServiceImpl implements AuthService {
     
     private final UserLocalCredentialRepository userLocalCredentialRepository;
@@ -30,6 +29,7 @@ public class AuthServiceImpl implements AuthService {
     private final PasswordEncoder passwordEncoder;
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public SignupResponse signup(SignupRequest request) {
         // 1. 이메일 중복 확인
         if (userLocalCredentialRepository.existsByEmail(request.email())) {
@@ -53,6 +53,7 @@ public class AuthServiceImpl implements AuthService {
         // 5. 저장
         UserLocalCredential savedCredential = userLocalCredentialRepository.save(credential);
 
+        // TODO: JWT 토큰 생성
         // 6. JWT 토큰 생성 (일단 더미 값)
         TokenResponse tokens = new TokenResponse(
             "dummy_access_token",  // 나중에 실제 JWT로 교체
@@ -73,6 +74,7 @@ public class AuthServiceImpl implements AuthService {
     }
     
     @Override
+    @Transactional(readOnly = true)
     public LoginResponse login(LoginRequest request) {
         // 1. 이메일로 사용자 조회
         UserLocalCredential credential = userLocalCredentialRepository.findByEmail(request.email())
@@ -88,6 +90,7 @@ public class AuthServiceImpl implements AuthService {
             throw new AuthExceptions.InvalidCredentialsException();
         }
         
+        // TODO: JWT 토큰 생성
         // 4. JWT 토큰 생성 (일단 더미 값)
         TokenResponse tokens = new TokenResponse(
             "dummy_access_token",  // 나중에 실제 JWT로 교체
@@ -108,6 +111,7 @@ public class AuthServiceImpl implements AuthService {
     }
     
     @Override
+    @Transactional(readOnly = true)
     public EmailValidationResponse validateEmail(EmailValidationRequest request) {
         // 1. 이메일 중복 확인
         boolean isAvailable = !userLocalCredentialRepository.existsByEmail(request.email());
