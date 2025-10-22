@@ -16,13 +16,14 @@ import com.example.GoSonGim_BE.domain.auth.dto.response.EmailValidationResponse;
 import com.example.GoSonGim_BE.domain.auth.dto.response.LoginResponse;
 import com.example.GoSonGim_BE.domain.auth.dto.response.SignupResponse;
 import com.example.GoSonGim_BE.domain.auth.service.AuthService;
+import com.example.GoSonGim_BE.global.constant.ApiVersion;
 import com.example.GoSonGim_BE.global.dto.ApiResponse;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
 @RestController
-@RequestMapping("/api/${api.version}/auth")
+@RequestMapping(ApiVersion.CURRENT + "/auth")
 @RequiredArgsConstructor
 public class AuthController {
     private final AuthService authService;

@@ -21,9 +21,6 @@ server:
 cors:
   allowed-origins: http://localhost:3000
 
-api:
-  version: v1
-
 logging:
   level:
     com.example.GoSonGim_BE: DEBUG
