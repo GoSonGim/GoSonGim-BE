@@ -81,7 +81,7 @@ public class AuthServiceImpl implements AuthService {
                 .orElseThrow(() -> new AuthExceptions.InvalidCredentialsException());
         
         // 2. 탈퇴한 계정 체크
-        if (credential.getUser().getIsDeleted()) {
+        if (credential.getUser().isDeleted()) {
             throw new AuthExceptions.UserDeletedException();
         }
         

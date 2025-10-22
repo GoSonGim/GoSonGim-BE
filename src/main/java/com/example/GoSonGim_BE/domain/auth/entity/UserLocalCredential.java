@@ -62,4 +62,13 @@ public class UserLocalCredential extends BaseEntity{
     private void prePersistDefaults() {
         if (this.emailVerified == null) this.emailVerified = false;
     }
+    
+    /**
+     * 이메일 인증 상태 확인
+     * 
+     * @return 이메일 인증 여부
+     */
+    public boolean isEmailVerified() {
+        return Boolean.TRUE.equals(this.emailVerified);
+    }
 }
