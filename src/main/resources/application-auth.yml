@@ -14,7 +14,7 @@ spring:
             redirect-uri: ${GOOGLE_REDIRECT_URI}
             scope:
               - email
-              - profile
+              # - profile
         provider:
           google:
             authorization-uri: "https://accounts.google.com/o/oauth2/v2/auth"

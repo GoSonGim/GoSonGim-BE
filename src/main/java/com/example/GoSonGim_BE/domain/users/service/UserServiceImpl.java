@@ -1,10 +1,12 @@
 package com.example.GoSonGim_BE.domain.users.service;
 
-import com.example.GoSonGim_BE.domain.users.entity.User;
-import com.example.GoSonGim_BE.domain.users.repository.UserRepository;
-import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import com.example.GoSonGim_BE.domain.users.entity.User;
+import com.example.GoSonGim_BE.domain.users.repository.UserRepository;
+
+import lombok.RequiredArgsConstructor;
 
 @Service
 @RequiredArgsConstructor
@@ -15,7 +17,7 @@ public class UserServiceImpl implements UserService {
     
     @Override
     public User createDefaultUser() {
-        User user = User.builder().build();
+        User user = User.createDefault();
         return userRepository.save(user);
     }
 }

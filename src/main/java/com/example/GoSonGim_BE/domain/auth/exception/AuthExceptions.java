@@ -57,13 +57,4 @@ public class AuthExceptions {
             super("구글 인증 정보가 유효하지 않습니다.", "OAUTH_TOKEN_INVALID_EXCEPTION");
         }
     }
-
-    /**
-     * OAuth 사용자 정보 조회 실패 예외
-     */
-    public static class OAuthUserInfoNotFoundException extends BaseException {
-        public OAuthUserInfoNotFoundException() {
-            super("구글 사용자 정보를 찾을 수 없습니다.", "OAUTH_USER_INFO_NOT_FOUND_EXCEPTION");
-        }
-    }
 }
