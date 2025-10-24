@@ -24,3 +24,7 @@ spring:
 
 jwt:
   secret: ${JWT_SECRET}
+  access-token:
+    expiration: 86400000  # 24시간 (밀리초)
+  refresh-token:
+    expiration: 1209600000  # 14일 (밀리초)
