@@ -3,7 +3,7 @@ spring:
     include:
       - datasource
       #- auth
-      #- s3
+      - s3
       #- azure
       #- redis
 
