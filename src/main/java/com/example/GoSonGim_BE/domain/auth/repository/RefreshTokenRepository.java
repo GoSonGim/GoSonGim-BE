@@ -7,5 +7,5 @@ import com.example.GoSonGim_BE.domain.auth.entity.RefreshToken;
 
 @Repository
 public interface RefreshTokenRepository extends JpaRepository<RefreshToken, Long> {
-    
+    void deleteByUserId(Long userId);
 }
