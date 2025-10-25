@@ -39,4 +39,22 @@ public class AuthExceptions {
             super("탈퇴한 계정입니다.", "USER_DELETED");
         }
     }
+
+    /**
+     * 유효하지 않은 리디렉션 URI 예외
+     */
+    public static class InvalidRedirectUriException extends BaseException {
+        public InvalidRedirectUriException() {
+            super("유효하지 않은 리디렉션 URI입니다.", "INVALID_REDIRECT_URI");
+        }
+    }
+
+    /**
+     * OAuth 토큰 교환 실패 예외
+    */
+    public static class OAuthTokenInvalidException extends BaseException {
+        public OAuthTokenInvalidException() {
+            super("구글 인증 정보가 유효하지 않습니다.", "OAUTH_TOKEN_INVALID_EXCEPTION");
+        }
+    }
 }
