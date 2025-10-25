@@ -24,4 +24,13 @@ public class UserExceptions {
             super("삭제되지 않은 사용자입니다.", "USER_NOT_DELETED");
         }
     }
+
+    /**
+     * 사용자 조회 예외
+     */
+    public static class UserNotFoundException extends BaseException {
+        public UserNotFoundException(Long userId) {
+            super("사용자를 찾을 수 없습니다.", "USER_NOT_FOUND");
+        }
+    }
 }
