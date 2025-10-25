@@ -57,10 +57,10 @@ public class RefreshToken extends BaseEntity{
 
     @Comment("폐기 사유")
     @Column(name="revoked_reason", length = 255)
-    private String revokedReason;
+    private RevokedReason revokedReason;
 
     @Builder
-    public RefreshToken(User user, String jti, String tokenHash, LocalDateTime expiresAt, LocalDateTime revokedAt, String revokedReason) {
+    public RefreshToken(User user, String jti, String tokenHash, LocalDateTime expiresAt, LocalDateTime revokedAt, RevokedReason revokedReason) {
         this.user = user;
         this.jti = jti;
         this.tokenHash = tokenHash;
