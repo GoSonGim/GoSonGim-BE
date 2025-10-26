@@ -90,6 +90,18 @@ public class User extends BaseEntity {
     }
 
     /**
+     * 기본 사용자 생성 (팩토리 메서드)
+     * 
+     * @return User 기본값으로 설정된 사용자
+     */
+    public static User createDefault() {
+        return User.builder()
+            .nickname("구글 사용자")
+            .level(UserLevel.BEGINNER_1)
+            .build();
+    }
+
+    /**
      * 정보제공 동의 업데이트
      *
      * @param consentType 동의 버전

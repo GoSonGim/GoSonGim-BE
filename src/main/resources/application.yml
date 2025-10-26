@@ -2,7 +2,7 @@ spring:
   profiles:
     include:
       - datasource
-      #- auth
+      - auth
       - s3
       #- azure
       #- redis
