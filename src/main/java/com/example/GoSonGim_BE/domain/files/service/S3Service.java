@@ -1,23 +1,26 @@
 package com.example.GoSonGim_BE.domain.files.service;
 
-import com.amazonaws.HttpMethod;
-import com.amazonaws.services.s3.AmazonS3;
-import com.amazonaws.services.s3.model.GeneratePresignedUrlRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import software.amazon.awssdk.services.s3.model.PutObjectRequest;
+import software.amazon.awssdk.services.s3.model.GetObjectRequest;
+import software.amazon.awssdk.services.s3.presigner.S3Presigner;
+import software.amazon.awssdk.services.s3.presigner.model.GetObjectPresignRequest;
+import software.amazon.awssdk.services.s3.presigner.model.PresignedGetObjectRequest;
+import software.amazon.awssdk.services.s3.presigner.model.PutObjectPresignRequest;
+import software.amazon.awssdk.services.s3.presigner.model.PresignedPutObjectRequest;
 
 import java.net.URL;
-import java.time.Instant;
+import java.time.Duration;
 import java.time.LocalDate;
-import java.util.Date;
 import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
 public class S3Service {
 
-    private final AmazonS3 amazonS3;
+    private final S3Presigner s3Presigner;
 
     @Value("${aws.s3.bucket}")
     private String bucketName;
@@ -28,23 +31,33 @@ public class S3Service {
         String uniqueFileName = userId + "_" + UUID.randomUUID() + "_" + fileName;
         String key = String.format("%s/%s/%s", folder, dateFolder, uniqueFileName);
 
-        Date expiration = Date.from(Instant.now().plusSeconds(expirationMinutes * 60));
+        PutObjectRequest objectRequest = PutObjectRequest.builder()
+                .bucket(bucketName)
+                .key(key)
+                .build();
 
-        GeneratePresignedUrlRequest request = new GeneratePresignedUrlRequest(bucketName, key)
-                .withMethod(HttpMethod.PUT)
-                .withExpiration(expiration);
+        PutObjectPresignRequest presignRequest = PutObjectPresignRequest.builder()
+                .signatureDuration(Duration.ofMinutes(expirationMinutes))
+                .putObjectRequest(objectRequest)
+                .build();
 
-        return amazonS3.generatePresignedUrl(request);
+        PresignedPutObjectRequest presignedRequest = s3Presigner.presignPutObject(presignRequest);
+        return presignedRequest.url();
     }
 
     // 다운로드용 Presigned URL 생성
     public URL generateDownloadPresignedUrl(String fileKey, int expirationMinutes) {
-        Date expiration = Date.from(Instant.now().plusSeconds(expirationMinutes * 60));
+        GetObjectRequest objectRequest = GetObjectRequest.builder()
+                .bucket(bucketName)
+                .key(fileKey)
+                .build();
 
-        GeneratePresignedUrlRequest request = new GeneratePresignedUrlRequest(bucketName, fileKey)
-                .withMethod(HttpMethod.GET)
-                .withExpiration(expiration);
+        GetObjectPresignRequest presignRequest = GetObjectPresignRequest.builder()
+                .signatureDuration(Duration.ofMinutes(expirationMinutes))
+                .getObjectRequest(objectRequest)
+                .build();
 
-        return amazonS3.generatePresignedUrl(request);
+        PresignedGetObjectRequest presignedRequest = s3Presigner.presignGetObject(presignRequest);
+        return presignedRequest.url();
     }
 }

@@ -5,7 +5,6 @@ import com.example.GoSonGim_BE.domain.files.service.S3Service;
 import com.example.GoSonGim_BE.global.constant.ApiVersion;
 import com.example.GoSonGim_BE.global.dto.ApiResponse;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
