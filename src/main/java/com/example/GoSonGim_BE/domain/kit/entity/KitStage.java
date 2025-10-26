@@ -1,7 +1,5 @@
-package com.example.GoSonGim_BE.domain.kit_stage.entity;
+package com.example.GoSonGim_BE.domain.kit.entity;
 
-import com.example.GoSonGim_BE.domain.kit.entity.Kit;
-import com.example.GoSonGim_BE.domain.kit_stage_log.entity.KitStageLog;
 import com.example.GoSonGim_BE.global.entity.BaseEntity;
 import jakarta.persistence.*;
 import lombok.*;

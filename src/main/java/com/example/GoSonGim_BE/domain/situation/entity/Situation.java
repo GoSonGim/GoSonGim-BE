@@ -1,6 +1,5 @@
 package com.example.GoSonGim_BE.domain.situation.entity;
 
-import com.example.GoSonGim_BE.domain.situation_log.entity.SituationLog;
 import com.example.GoSonGim_BE.global.entity.BaseEntity;
 import jakarta.persistence.*;
 import lombok.*;

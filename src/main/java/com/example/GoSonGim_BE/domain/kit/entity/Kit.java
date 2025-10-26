@@ -1,6 +1,5 @@
 package com.example.GoSonGim_BE.domain.kit.entity;
 
-import com.example.GoSonGim_BE.domain.kit_stage.entity.KitStage;
 import com.example.GoSonGim_BE.global.entity.BaseEntity;
 import jakarta.persistence.*;
 import lombok.*;
