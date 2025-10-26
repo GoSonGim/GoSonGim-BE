@@ -29,6 +29,10 @@ dependencies {
 	implementation 'org.springframework.boot:spring-boot-starter-security'
 	implementation 'org.springframework.boot:spring-boot-starter-web'
 	implementation 'org.springframework.boot:spring-boot-starter-validation'
+
+	//aws
+	implementation 'com.amazonaws:aws-java-sdk-s3:1.12.772'
+
 	// Google API Client Library
     implementation 'com.google.api-client:google-api-client:2.2.0'
 	compileOnly 'org.projectlombok:lombok'
