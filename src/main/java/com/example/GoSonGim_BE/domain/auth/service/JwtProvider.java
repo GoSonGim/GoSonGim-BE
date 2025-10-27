@@ -246,24 +246,22 @@ public class JwtProvider {
     
     /**
      * Refresh Token 로그아웃 처리 (폐기)
+     * - 이미 폐기된 토큰이면 RefreshTokenRevokedException 발생
+     * - 유효하지 않은 토큰이면 해당 예외 발생
      * 
      * @param refreshTokenValue 로그아웃할 Refresh Token JWT 문자열
+     * @throws AuthExceptions.RefreshTokenRevokedException 이미 폐기된 토큰
+     * @throws AuthExceptions.InvalidRefreshTokenException 유효하지 않은 토큰
+     * @throws AuthExceptions.RefreshTokenExpiredException 만료된 토큰
+     * @throws AuthExceptions.RefreshTokenNotFoundException 존재하지 않는 토큰
      */
     @Transactional
     public void revokeRefreshTokenForLogout(String refreshTokenValue) {
-        try {
-            // 1. Refresh Token 검증 및 조회
-            RefreshToken refreshToken = validateAndGetRefreshToken(refreshTokenValue);
-            
-            // 2. LOGOUT 이유로 폐기
-            refreshToken.revoke(RevokedReason.LOGOUT);
-            refreshTokenRepository.save(refreshToken);
-        } catch (AuthExceptions.RefreshTokenRevokedException e) {
-            // 이미 폐기된 토큰이면 무시
-        } catch (AuthExceptions.InvalidRefreshTokenException | 
-                 AuthExceptions.RefreshTokenExpiredException | 
-                 AuthExceptions.RefreshTokenNotFoundException e) {
-            // 잘못된 토큰이면 무시
-        }
+        // 1. Refresh Token 검증 및 조회 (예외 발생 시 그대로 throw)
+        RefreshToken refreshToken = validateAndGetRefreshToken(refreshTokenValue);
+        
+        // 2. LOGOUT 이유로 폐기
+        refreshToken.revoke(RevokedReason.LOGOUT);
+        refreshTokenRepository.save(refreshToken);
     }
 }
