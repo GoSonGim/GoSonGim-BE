@@ -14,7 +14,7 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
-import jakarta.persistence.OneToOne;
+import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import lombok.AccessLevel;
 import lombok.Builder;
@@ -35,8 +35,8 @@ public class RefreshToken extends BaseEntity{
     private Long id;
 
     @Comment("사용자")
-    @OneToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id", nullable = false, unique = true)
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
     @Comment("토큰 고유 식별자")
@@ -67,5 +67,34 @@ public class RefreshToken extends BaseEntity{
         this.expiresAt = expiresAt;
         this.revokedAt = revokedAt;
         this.revokedReason = revokedReason;
+    }
+
+    /**
+     * 토큰 폐기
+     */
+    public void revoke(RevokedReason reason) {
+        this.revokedAt = LocalDateTime.now();
+        this.revokedReason = reason;
+    }
+
+    /**
+     * 토큰 만료 여부
+     */
+    public boolean isExpired() {
+        return LocalDateTime.now().isAfter(this.expiresAt);
+    }
+
+    /**
+     * 토큰 폐기 여부
+     */
+    public boolean isRevoked() {
+        return this.revokedAt != null;
+    }
+
+    /**
+     * 토큰 유효성 확인
+     */
+    public boolean isValid() {
+        return !isExpired() && !isRevoked();
     }
 }

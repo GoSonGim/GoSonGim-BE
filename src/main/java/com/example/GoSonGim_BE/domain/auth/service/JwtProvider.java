@@ -12,8 +12,11 @@ import java.util.UUID;
 import javax.crypto.SecretKey;
 
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.example.GoSonGim_BE.domain.auth.entity.RefreshToken;
+import com.example.GoSonGim_BE.domain.auth.entity.RevokedReason;
+import com.example.GoSonGim_BE.domain.auth.exception.AuthExceptions;
 import com.example.GoSonGim_BE.domain.auth.repository.RefreshTokenRepository;
 import com.example.GoSonGim_BE.domain.users.entity.User;
 import com.example.GoSonGim_BE.domain.users.service.UserService;
@@ -46,7 +49,7 @@ public class JwtProvider {
      * @param userId 사용자 ID
      * @return JWT Access Token
      */
-    public String generateAcessToken(Long userId) {
+    public String generateAccessToken(Long userId) {
         Date now = new Date();
         Date expiration = new Date(now.getTime() + jwtProperties.getAccessToken().getExpiration()); 
 
@@ -58,15 +61,18 @@ public class JwtProvider {
             .compact();
     }
 
-/**
+    /**
      * Refresh Token 생성 및 DB 저장
      * 
      * @param userId 사용자 ID
      * @return RefreshToken JWT 문자열
      */
     public String generateRefreshToken(Long userId) {
-        // 1. 기존 토큰 삭제 (OneToOne)
-        refreshTokenRepository.deleteByUserId(userId);
+        // 1. 기존 활성 토큰이 있으면 소프트 폐기 처리
+        refreshTokenRepository.findByUserIdAndRevokedAtIsNull(userId).ifPresent(active -> {
+            active.revoke(RevokedReason.ROTATED);
+            refreshTokenRepository.save(active);
+        });
         
         // 2. JTI 생성
         String jti = UUID.randomUUID().toString();
@@ -162,5 +168,72 @@ public class JwtProvider {
     public Long getUserIdFromToken(String token) {
         Claims claims = getClaims(token);
         return Long.parseLong(claims.getSubject());
+    }
+
+    /**
+     * 토큰에서 JTI 추출
+     * 
+     * @param token JWT 토큰
+     * @return JTI
+     */
+    public String getJtiFromToken(String token) {
+        Claims claims = getClaims(token);
+        return claims.getId();
+    }
+
+    /**
+     * Refresh Token 검증 및 조회
+     * 
+     * @param refreshTokenValue JWT 문자열
+     * @return RefreshToken 엔티티
+     * @throws AuthExceptions 검증 실패 시
+     */
+    public RefreshToken validateAndGetRefreshToken(String refreshTokenValue) {
+        // 1. JWT 검증
+        if (!validateToken(refreshTokenValue)) {
+            throw new AuthExceptions.InvalidRefreshTokenException();
+        }
+        
+        // 2. JTI 추출
+        String jti = getJtiFromToken(refreshTokenValue);
+        
+        // 3. DB에서 조회
+        RefreshToken refreshToken = refreshTokenRepository.findByJti(jti)
+            .orElseThrow(() -> new AuthExceptions.RefreshTokenNotFoundException());
+        
+        // 4. 폐기 여부 확인
+        if (refreshToken.isRevoked()) {
+            throw new AuthExceptions.RefreshTokenRevokedException();
+        }
+        
+        // 5. 만료 여부 확인
+        if (refreshToken.isExpired()) {
+            throw new AuthExceptions.RefreshTokenExpiredException();
+        }
+        
+        // 6. 토큰 해시 검증
+        String tokenHash = hashToken(refreshTokenValue);
+        if (!tokenHash.equals(refreshToken.getTokenHash())) {
+            throw new AuthExceptions.InvalidRefreshTokenException();
+        }
+        
+        return refreshToken;
+    }
+
+    /**
+     * Refresh Token 무효화 및 새 토큰 발급
+     * 
+     * @param oldRefreshToken 기존 Refresh Token 엔티티
+     * @return 새로운 JWT 문자열
+     */
+    @Transactional
+    public String rotateRefreshToken(RefreshToken oldRefreshToken) {
+        // 1. 기존 토큰 무효화
+        oldRefreshToken.revoke(RevokedReason.ROTATED);
+        refreshTokenRepository.save(oldRefreshToken);
+        
+        // 2. 새 토큰 발급
+        Long userId = oldRefreshToken.getUser().getId();
+        return generateRefreshToken(userId);
     }
 }

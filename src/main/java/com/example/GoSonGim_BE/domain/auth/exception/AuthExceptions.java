@@ -57,4 +57,28 @@ public class AuthExceptions {
             super("구글 인증 정보가 유효하지 않습니다.", "OAUTH_TOKEN_INVALID_EXCEPTION");
         }
     }
+
+    public static class InvalidRefreshTokenException extends BaseException {
+        public InvalidRefreshTokenException() {
+            super("유효하지 않은 Refresh Token입니다.", "INVALID_REFRESH_TOKEN");
+        }
+    }
+    
+    public static class RefreshTokenNotFoundException extends BaseException {
+        public RefreshTokenNotFoundException() {
+            super("Refresh Token을 찾을 수 없습니다.", "REFRESH_TOKEN_NOT_FOUND");
+        }
+    }
+    
+    public static class RefreshTokenRevokedException extends BaseException {
+        public RefreshTokenRevokedException() {
+            super("폐기된 Refresh Token입니다.", "REFRESH_TOKEN_REVOKED");
+        }
+    }
+    
+    public static class RefreshTokenExpiredException extends BaseException {
+        public RefreshTokenExpiredException() {
+            super("만료된 Refresh Token입니다.", "REFRESH_TOKEN_EXPIRED");
+        }
+    }
 }

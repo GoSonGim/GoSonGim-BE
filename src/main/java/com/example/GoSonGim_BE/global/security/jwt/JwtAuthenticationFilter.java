@@ -12,21 +12,33 @@ import org.springframework.web.filter.OncePerRequestFilter;
 import com.example.GoSonGim_BE.domain.auth.service.JwtProvider;
 import com.example.GoSonGim_BE.domain.users.entity.User;
 import com.example.GoSonGim_BE.domain.users.service.UserService;
+import com.example.GoSonGim_BE.global.constant.ApiVersion;
 
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 @Component
 @RequiredArgsConstructor
+@Slf4j
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
     private final JwtProvider jwtProvider;
     private final UserService userService;
 
+    /**
+     * /auth/** 경로는 JWT 검증 건너뛰기
+     */
     @Override
-    protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
+    protected boolean shouldNotFilter(HttpServletRequest request) throws ServletException {
+        String path = request.getRequestURI();
+        return path.startsWith(ApiVersion.CURRENT + "/auth");
+    }
+
+    @Override
+    protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {    
         // 1. Authorization Header에서 토큰 추출
         String token = extractTokenFromRequest(request);
 
@@ -46,10 +58,6 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
             // 5. SecurityContext에 저장
             SecurityContextHolder.getContext().setAuthentication(authentication);
-
-            // 6. 다음 필터로 전달
-            filterChain.doFilter(request, response);
-
         }
 
         // 6. 다음 필터로 전달

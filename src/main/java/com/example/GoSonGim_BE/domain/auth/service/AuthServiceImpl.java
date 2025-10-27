@@ -11,6 +11,7 @@ import com.example.GoSonGim_BE.domain.auth.dto.external.GoogleUserInfo;
 import com.example.GoSonGim_BE.domain.auth.dto.request.EmailValidationRequest;
 import com.example.GoSonGim_BE.domain.auth.dto.request.GoogleLoginRequest;
 import com.example.GoSonGim_BE.domain.auth.dto.request.LoginRequest;
+import com.example.GoSonGim_BE.domain.auth.dto.request.RefreshTokenRequest;
 import com.example.GoSonGim_BE.domain.auth.dto.request.SignupRequest;
 import com.example.GoSonGim_BE.domain.auth.dto.response.EmailValidationResponse;
 import com.example.GoSonGim_BE.domain.auth.dto.response.LoginResponse;
@@ -85,7 +86,7 @@ public class AuthServiceImpl implements AuthService {
     }
     
     @Override
-    @Transactional(readOnly = true)
+    @Transactional(rollbackFor = Exception.class)
     public LoginResponse login(LoginRequest request) {
         // 1. 이메일로 사용자 조회 (Fetch Join으로 User도 함께 조회)
         UserLocalCredential credential = userLocalCredentialRepository.findByEmailWithUser(request.email())
@@ -264,7 +265,7 @@ public class AuthServiceImpl implements AuthService {
      * @return TokenResponse
      */
     private TokenResponse generateTokenResponse(Long userId) {
-        String accessToken = jwtProvider.generateAcessToken(userId);
+        String accessToken = jwtProvider.generateAccessToken(userId);
         String refreshToken = jwtProvider.generateRefreshToken(userId);
         
         return new TokenResponse(
@@ -273,6 +274,26 @@ public class AuthServiceImpl implements AuthService {
             "Bearer",
             3600,    // 밀리초 → 초
             1209600   // 밀리초 → 초
+        );
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public TokenResponse refresh(RefreshTokenRequest request) {
+        // 1. Refresh Token 검증 및 조회 (JwtProvider에 위임)
+        RefreshToken refreshToken = jwtProvider.validateAndGetRefreshToken(request.refreshToken());
+    
+        // 2. 새로운 토큰 발급 (JwtProvider에 위임)
+        String newAccessToken = jwtProvider.generateAccessToken(refreshToken.getUser().getId());
+        String newRefreshToken = jwtProvider.rotateRefreshToken(refreshToken);
+        
+        // 3. 응답 생성
+        return new TokenResponse(
+            newAccessToken,
+            newRefreshToken,
+            "Bearer",
+            3600,
+            1209600
         );
     }
 }
