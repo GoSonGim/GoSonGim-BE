@@ -11,10 +11,12 @@ import org.springframework.web.bind.annotation.RestController;
 import com.example.GoSonGim_BE.domain.auth.dto.request.EmailValidationRequest;
 import com.example.GoSonGim_BE.domain.auth.dto.request.GoogleLoginRequest;
 import com.example.GoSonGim_BE.domain.auth.dto.request.LoginRequest;
+import com.example.GoSonGim_BE.domain.auth.dto.request.LogoutRequest;
 import com.example.GoSonGim_BE.domain.auth.dto.request.RefreshTokenRequest;
 import com.example.GoSonGim_BE.domain.auth.dto.request.SignupRequest;
 import com.example.GoSonGim_BE.domain.auth.dto.response.EmailValidationResponse;
 import com.example.GoSonGim_BE.domain.auth.dto.response.LoginResponse;
+import com.example.GoSonGim_BE.domain.auth.dto.response.LogoutResponse;
 import com.example.GoSonGim_BE.domain.auth.dto.response.SignupResponse;
 import com.example.GoSonGim_BE.domain.auth.dto.response.TokenResponse;
 import com.example.GoSonGim_BE.domain.auth.service.AuthService;
@@ -80,6 +82,16 @@ public class AuthController {
     public ResponseEntity<ApiResponse<TokenResponse>> refresh(@Valid @RequestBody RefreshTokenRequest request) {
         TokenResponse response = authService.refresh(request);
         ApiResponse<TokenResponse> apiResponse = ApiResponse.success(200, "토큰 재발급을 성공했습니다.", response);
+        return ResponseEntity.ok(apiResponse);
+    }
+    
+    /**
+     * 로그아웃
+     */
+    @PostMapping("/logout")
+    public ResponseEntity<ApiResponse<LogoutResponse>> logout(@Valid @RequestBody LogoutRequest request) {
+        LogoutResponse response = authService.logout(request);
+        ApiResponse<LogoutResponse> apiResponse = ApiResponse.success(200, "로그아웃이 완료되었습니다.", response);
         return ResponseEntity.ok(apiResponse);
     }
 }

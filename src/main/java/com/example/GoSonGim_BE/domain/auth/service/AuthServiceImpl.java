@@ -11,10 +11,12 @@ import com.example.GoSonGim_BE.domain.auth.dto.external.GoogleUserInfo;
 import com.example.GoSonGim_BE.domain.auth.dto.request.EmailValidationRequest;
 import com.example.GoSonGim_BE.domain.auth.dto.request.GoogleLoginRequest;
 import com.example.GoSonGim_BE.domain.auth.dto.request.LoginRequest;
+import com.example.GoSonGim_BE.domain.auth.dto.request.LogoutRequest;
 import com.example.GoSonGim_BE.domain.auth.dto.request.RefreshTokenRequest;
 import com.example.GoSonGim_BE.domain.auth.dto.request.SignupRequest;
 import com.example.GoSonGim_BE.domain.auth.dto.response.EmailValidationResponse;
 import com.example.GoSonGim_BE.domain.auth.dto.response.LoginResponse;
+import com.example.GoSonGim_BE.domain.auth.dto.response.LogoutResponse;
 import com.example.GoSonGim_BE.domain.auth.dto.response.SignupResponse;
 import com.example.GoSonGim_BE.domain.auth.dto.response.TokenResponse;
 import com.example.GoSonGim_BE.domain.auth.dto.response.UserResponse;
@@ -295,5 +297,15 @@ public class AuthServiceImpl implements AuthService {
             3600,
             1209600
         );
+    }
+    
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public LogoutResponse logout(LogoutRequest request) {
+        // Refresh Token 폐기 처리
+        jwtProvider.revokeRefreshTokenForLogout(request.refreshToken());
+        
+        // 응답 생성
+        return new LogoutResponse(true, "Refresh Token이 정상적으로 폐기되었습니다.");
     }
 }

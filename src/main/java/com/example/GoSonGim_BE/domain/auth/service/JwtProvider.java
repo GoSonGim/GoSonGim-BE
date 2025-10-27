@@ -236,4 +236,27 @@ public class JwtProvider {
         Long userId = oldRefreshToken.getUser().getId();
         return generateRefreshToken(userId);
     }
+    
+    /**
+     * Refresh Token 로그아웃 처리 (폐기)
+     * 
+     * @param refreshTokenValue 로그아웃할 Refresh Token JWT 문자열
+     */
+    @Transactional
+    public void revokeRefreshTokenForLogout(String refreshTokenValue) {
+        try {
+            // 1. Refresh Token 검증 및 조회
+            RefreshToken refreshToken = validateAndGetRefreshToken(refreshTokenValue);
+            
+            // 2. LOGOUT 이유로 폐기
+            refreshToken.revoke(RevokedReason.LOGOUT);
+            refreshTokenRepository.save(refreshToken);
+        } catch (AuthExceptions.RefreshTokenRevokedException e) {
+            // 이미 폐기된 토큰이면 무시
+        } catch (AuthExceptions.InvalidRefreshTokenException | 
+                 AuthExceptions.RefreshTokenExpiredException | 
+                 AuthExceptions.RefreshTokenNotFoundException e) {
+            // 잘못된 토큰이면 무시
+        }
+    }
 }
