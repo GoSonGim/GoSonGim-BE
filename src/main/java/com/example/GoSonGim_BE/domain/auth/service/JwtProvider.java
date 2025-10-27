@@ -19,6 +19,8 @@ import com.example.GoSonGim_BE.domain.users.entity.User;
 import com.example.GoSonGim_BE.domain.users.service.UserService;
 import com.example.GoSonGim_BE.global.config.JwtProperties;
 
+import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
 import jakarta.annotation.PostConstruct;
@@ -116,5 +118,39 @@ public class JwtProvider {
         } catch (NoSuchAlgorithmException e) {
             throw new RuntimeException("SHA-256 알고리즘을 찾을 수 없습니다.", e);
         }
+    }
+
+    /**
+     * 토큰 검증
+     */
+    public boolean validateToken(String token) {
+        try {
+            Jwts.parser()
+                .verifyWith(secretKey)
+                .build()
+                .parseSignedClaims(token);
+            return true;
+        } catch (JwtException | IllegalArgumentException e) {
+            return false;
+        }
+    }
+
+    /**
+     * 토큰에서 Claims 추출
+     */
+    private Claims getClaims(String token) {
+        return Jwts.parser()
+            .verifyWith(secretKey)
+            .build()
+            .parseSignedClaims(token)
+            .getPayload();
+    }
+
+    /**
+     * 토큰에서 userId 추출
+     */
+    public Long getUserIdFromToken(String token) {
+        Claims claims = getClaims(token);
+        return Long.parseLong(claims.getSubject());
     }
 }
