@@ -72,16 +72,7 @@ public class AuthServiceImpl implements AuthService {
         UserLocalCredential savedCredential = userLocalCredentialRepository.save(credential);
 
         // 6. JWT 토큰 생성
-        String accessToken = jwtProvider.generateAcessToken(savedCredential.getUser().getId());
-        String refreshToken = jwtProvider.generateRefreshToken(savedCredential.getUser().getId());
-
-        TokenResponse tokens = new TokenResponse(
-            accessToken,
-            refreshToken,
-            "Bearer",
-            3600,
-            1209600
-        );
+        TokenResponse tokens = generateTokenResponse(savedCredential.getUser().getId());
 
         // 7. 사용자 정보
         UserResponse userResponse = new UserResponse(
@@ -111,16 +102,7 @@ public class AuthServiceImpl implements AuthService {
         }
         
         // 4. JWT 토큰 생성
-        String accessToken = jwtProvider.generateAcessToken(credential.getUser().getId());
-        String refreshToken = jwtProvider.generateRefreshToken(credential.getUser().getId());
-
-        TokenResponse tokens = new TokenResponse(
-            accessToken,
-            refreshToken,
-            "Bearer",
-            3600,
-            1209600
-        );  
+        TokenResponse tokens = generateTokenResponse(credential.getUser().getId());
         
         // 5. 사용자 정보
         UserResponse userResponse = new UserResponse(
@@ -166,16 +148,7 @@ public class AuthServiceImpl implements AuthService {
         User user = findOrCreateOAuthUser(googleUserInfo);
 
         // 4. JWT 토큰 생성
-        String accessToken = jwtProvider.generateAcessToken(user.getId());
-        String refreshToken = jwtProvider.generateRefreshToken(user.getId());
-
-        TokenResponse tokens = new TokenResponse(
-            accessToken,
-            refreshToken,
-            "Bearer",
-            3600,
-            1209600
-        );
+        TokenResponse tokens = generateTokenResponse(user.getId());
 
         // 5. 응답 생성
         UserResponse userResponse = new UserResponse(
@@ -282,5 +255,24 @@ public class AuthServiceImpl implements AuthService {
 
         // 4. 신규 사용자 반환
         return newUser;
+    }
+
+    /**
+     * JWT 토큰 생성
+     * 
+     * @param userId 사용자 ID
+     * @return TokenResponse
+     */
+    private TokenResponse generateTokenResponse(Long userId) {
+        String accessToken = jwtProvider.generateAcessToken(userId);
+        String refreshToken = jwtProvider.generateRefreshToken(userId);
+        
+        return new TokenResponse(
+            accessToken,
+            refreshToken,
+            "Bearer",
+            3600,    // 밀리초 → 초
+            1209600   // 밀리초 → 초
+        );
     }
 }
