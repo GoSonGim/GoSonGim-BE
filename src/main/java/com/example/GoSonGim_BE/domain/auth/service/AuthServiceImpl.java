@@ -17,6 +17,7 @@ import com.example.GoSonGim_BE.domain.auth.dto.response.LoginResponse;
 import com.example.GoSonGim_BE.domain.auth.dto.response.SignupResponse;
 import com.example.GoSonGim_BE.domain.auth.dto.response.TokenResponse;
 import com.example.GoSonGim_BE.domain.auth.dto.response.UserResponse;
+import com.example.GoSonGim_BE.domain.auth.entity.RefreshToken;
 import com.example.GoSonGim_BE.domain.auth.entity.UserLocalCredential;
 import com.example.GoSonGim_BE.domain.auth.entity.UserOAuthCredential;
 import com.example.GoSonGim_BE.domain.auth.exception.AuthExceptions;
@@ -43,6 +44,7 @@ public class AuthServiceImpl implements AuthService {
     private final UserService userService;
     private final PasswordEncoder passwordEncoder;
     private final OAuthProperties oauthProperties;
+    private final JwtProvider jwtProvider;
 
     @Override
     @Transactional(rollbackFor = Exception.class)
@@ -69,11 +71,13 @@ public class AuthServiceImpl implements AuthService {
         // 5. 저장
         UserLocalCredential savedCredential = userLocalCredentialRepository.save(credential);
 
-        // TODO: JWT 토큰 생성
-        // 6. JWT 토큰 생성 (일단 더미 값)
+        // 6. JWT 토큰 생성
+        String accessToken = jwtProvider.generateAcessToken(savedCredential.getUser().getId());
+        String refreshToken = jwtProvider.generateRefreshToken(savedCredential.getUser().getId());
+
         TokenResponse tokens = new TokenResponse(
-            "dummy_access_token",  // 나중에 실제 JWT로 교체
-            "dummy_refresh_token", // 나중에 실제 JWT로 교체
+            accessToken,
+            refreshToken,
             "Bearer",
             3600,
             1209600
@@ -106,15 +110,17 @@ public class AuthServiceImpl implements AuthService {
             throw new AuthExceptions.InvalidCredentialsException();
         }
         
-        // TODO: JWT 토큰 생성
-        // 4. JWT 토큰 생성 (일단 더미 값)
+        // 4. JWT 토큰 생성
+        String accessToken = jwtProvider.generateAcessToken(credential.getUser().getId());
+        String refreshToken = jwtProvider.generateRefreshToken(credential.getUser().getId());
+
         TokenResponse tokens = new TokenResponse(
-            "dummy_access_token",  // 나중에 실제 JWT로 교체
-            "dummy_refresh_token", // 나중에 실제 JWT로 교체
+            accessToken,
+            refreshToken,
             "Bearer",
             3600,
             1209600
-        );
+        );  
         
         // 5. 사용자 정보
         UserResponse userResponse = new UserResponse(
@@ -159,10 +165,13 @@ public class AuthServiceImpl implements AuthService {
         GoogleUserInfo googleUserInfo = extractUserInfoFromIdToken(idToken);
         User user = findOrCreateOAuthUser(googleUserInfo);
 
-        // 4. JWT 토큰 생성 (일단 더미 값)
+        // 4. JWT 토큰 생성
+        String accessToken = jwtProvider.generateAcessToken(user.getId());
+        String refreshToken = jwtProvider.generateRefreshToken(user.getId());
+
         TokenResponse tokens = new TokenResponse(
-            "dummy_access_token",  // 나중에 실제 JWT로 교체
-            "dummy_refresh_token", // 나중에 실제 JWT로 교체
+            accessToken,
+            refreshToken,
             "Bearer",
             3600,
             1209600

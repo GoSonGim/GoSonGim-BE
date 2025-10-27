@@ -62,9 +62,9 @@ public class JwtProvider {
      * Refresh Token 생성 및 DB 저장
      * 
      * @param userId 사용자 ID
-     * @return RefreshToken 엔티티
+     * @return RefreshToken JWT 문자열
      */
-    public RefreshToken generateRefreshToken(Long userId) {
+    public String generateRefreshToken(Long userId) {
         // 1. 기존 토큰 삭제 (OneToOne)
         refreshTokenRepository.deleteByUserId(userId);
         
@@ -83,25 +83,11 @@ public class JwtProvider {
             .signWith(secretKey)
             .compact();
         
-        // 4. 토큰 해시 생성
-        String tokenHash = hashToken(tokenValue);
+        // 4. DB 저장
+        saveRefreshTokenToDb(userId, jti, tokenValue);
         
-        // 5. 만료 시각 계산
-        long expirationMillis = jwtProperties.getRefreshToken().getExpiration();
-        LocalDateTime expiresAt = LocalDateTime.now().plusSeconds(expirationMillis / 1000);
-        
-        // 6. User 조회
-        User user = userService.findById(userId);
-        
-        // 7. RefreshToken 엔티티 생성 & 저장
-        RefreshToken refreshToken = RefreshToken.builder()
-            .user(user)
-            .jti(jti)
-            .tokenHash(tokenHash)
-            .expiresAt(expiresAt)
-            .build();
-        
-        return refreshTokenRepository.save(refreshToken);
+        // 5. JWT 문자열 반환
+        return tokenValue;
     }
 
     /**
@@ -118,6 +104,30 @@ public class JwtProvider {
         } catch (NoSuchAlgorithmException e) {
             throw new RuntimeException("SHA-256 알고리즘을 찾을 수 없습니다.", e);
         }
+    }
+
+    /**
+     * Refresh Token DB 저장
+     * 
+     * @param userId 사용자 ID
+     * @param jti JWT ID
+     * @param tokenValue Refresh Token JWT 문자열
+     */
+    private void saveRefreshTokenToDb(Long userId, String jti, String tokenValue) {
+        String tokenHash = hashToken(tokenValue);
+        long expirationMillis = jwtProperties.getRefreshToken().getExpiration();
+        LocalDateTime expiresAt = LocalDateTime.now().plusSeconds(expirationMillis / 1000);
+        
+        User user = userService.findById(userId);
+        
+        RefreshToken refreshToken = RefreshToken.builder()
+            .user(user)
+            .jti(jti)
+            .tokenHash(tokenHash)
+            .expiresAt(expiresAt)
+            .build();
+        
+        refreshTokenRepository.save(refreshToken);
     }
 
     /**
