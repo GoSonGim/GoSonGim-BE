@@ -274,18 +274,18 @@ public class AuthServiceImpl implements AuthService {
             accessToken,
             refreshToken,
             "Bearer",
-            3600,    // 밀리초 → 초
-            1209600   // 밀리초 → 초
+            (int) (jwtProvider.getJwtProperties().getAccessToken().getExpiration() / 1000),
+            (int) (jwtProvider.getJwtProperties().getRefreshToken().getExpiration() / 1000)
         );
     }
 
     @Override
     @Transactional(rollbackFor = Exception.class)
     public TokenResponse refresh(RefreshTokenRequest request) {
-        // 1. Refresh Token 검증 및 조회 (JwtProvider에 위임)
+        // 1. Refresh Token 검증 및 조회
         RefreshToken refreshToken = jwtProvider.validateAndGetRefreshToken(request.refreshToken());
     
-        // 2. 새로운 토큰 발급 (JwtProvider에 위임)
+        // 2. 기존 토큰 회전 및 새 토큰 발급
         String newAccessToken = jwtProvider.generateAccessToken(refreshToken.getUser().getId());
         String newRefreshToken = jwtProvider.rotateRefreshToken(refreshToken);
         
@@ -294,8 +294,8 @@ public class AuthServiceImpl implements AuthService {
             newAccessToken,
             newRefreshToken,
             "Bearer",
-            3600,
-            1209600
+            (int) (jwtProvider.getJwtProperties().getAccessToken().getExpiration() / 1000),
+            (int) (jwtProvider.getJwtProperties().getRefreshToken().getExpiration() / 1000)
         );
     }
     

@@ -42,6 +42,13 @@ public class JwtProvider {
       byte[] keyBytes = jwtProperties.getSecret().getBytes(Charset.forName("UTF-8"));
       this.secretKey = Keys.hmacShaKeyFor(keyBytes);
     }
+    
+    /**
+     * JwtProperties Getter
+     */
+    public JwtProperties getJwtProperties() {
+        return jwtProperties;
+    }
 
     /**
      * Access Token 생성
