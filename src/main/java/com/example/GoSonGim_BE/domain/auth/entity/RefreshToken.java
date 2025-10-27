@@ -39,8 +39,8 @@ public class RefreshToken extends BaseEntity{
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
-    @Comment("토큰 고유 식별자")
-    @Column(name = "token", nullable = false, unique = true)
+    @Comment("토큰 고유 식별자 (JWT ID)")
+    @Column(name = "jti", nullable = false, unique = true, length = 36)
     private String jti;   // UUID
 
     @Comment("토큰 해시")
