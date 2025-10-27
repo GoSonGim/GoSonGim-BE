@@ -29,7 +29,10 @@ public class SecurityConfig {
             .sessionManagement(session -> 
                 session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(authz -> authz
-                .requestMatchers(ApiVersion.CURRENT + "/auth/**").permitAll()
+                .requestMatchers(
+                        ApiVersion.CURRENT + "/auth/**",
+                        ApiVersion.CURRENT + "/files/**"
+                ).permitAll()
                 .anyRequest().authenticated()
             );
         
