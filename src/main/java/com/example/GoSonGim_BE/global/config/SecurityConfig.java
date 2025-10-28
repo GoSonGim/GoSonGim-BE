@@ -31,7 +31,8 @@ public class SecurityConfig {
             .authorizeHttpRequests(authz -> authz
                 .requestMatchers(
                         ApiVersion.CURRENT + "/auth/**",
-                        ApiVersion.CURRENT + "/files/**"
+                        ApiVersion.CURRENT + "/files/**",
+                        ApiVersion.CURRENT + "/kits/**"
                 ).permitAll()
                 .anyRequest().authenticated()
             );
