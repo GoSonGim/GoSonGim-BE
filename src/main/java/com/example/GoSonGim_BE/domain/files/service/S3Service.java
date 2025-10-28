@@ -1,5 +1,6 @@
 package com.example.GoSonGim_BE.domain.files.service;
 
+import com.example.GoSonGim_BE.domain.files.exception.FilesExceptions;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -11,6 +12,7 @@ import software.amazon.awssdk.services.s3.presigner.model.PresignedGetObjectRequ
 import software.amazon.awssdk.services.s3.presigner.model.PutObjectPresignRequest;
 import software.amazon.awssdk.services.s3.presigner.model.PresignedPutObjectRequest;
 
+import java.io.InputStream;
 import java.net.URL;
 import java.time.Duration;
 import java.time.LocalDate;
@@ -59,5 +61,15 @@ public class S3Service {
 
         PresignedGetObjectRequest presignedRequest = s3Presigner.presignGetObject(presignRequest);
         return presignedRequest.url();
+    }
+    
+    // S3에서 파일을 InputStream으로 다운로드
+    public InputStream downloadFileAsStream(String fileKey) {
+        try {
+            URL presignedUrl = generateDownloadPresignedUrl(fileKey, 10);
+            return presignedUrl.openStream();
+        } catch (Exception e) {
+            throw new FilesExceptions.S3DownloadFailed(fileKey);
+        }
     }
 }

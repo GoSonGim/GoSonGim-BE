@@ -9,3 +9,4 @@ azure:
     region: ${AZURE_SPEECH_REGION}
     tts-endpoint: https://${AZURE_SPEECH_REGION}.tts.speech.microsoft.com
     stt-endpoint: https://${AZURE_SPEECH_REGION}.stt.speech.microsoft.com
+    customVoiceEndpoint: https://firstproject22.cognitiveservices.azure.com/

@@ -37,8 +37,8 @@ public class KitStageLog {
     private User user;
 
     @Comment("이름")
-    @Column(name = "name", nullable = false)
-    private String name;
+    @Column(name = "name")
+    private String name; //Todo 이 name의 사용처 정하기
 
     @Comment("평가 결과")
     @Column(name = "evaluation_score")

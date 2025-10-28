@@ -26,4 +26,11 @@ public class KitExceptions {
             super("존재하지 않는 키트 단계입니다.", "Kit_Stage_NOT_FOUND");
         }
     }
+    
+    public static class PronunciationAssessmentFailed extends BaseException {
+        
+        public PronunciationAssessmentFailed(String detail) {
+            super("발음 평가 중 오류가 발생했습니다: " + detail, "PRONUNCIATION_ASSESSMENT_FAILED");
+        }
+    }
 }
