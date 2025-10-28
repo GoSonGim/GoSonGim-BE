@@ -81,25 +81,13 @@ public class JwtProvider {
             refreshTokenRepository.save(active);
         });
         
-        // 2. JTI 생성
+        // 2. 새 토큰 생성
         String jti = UUID.randomUUID().toString();
+        String tokenValue = buildRefreshTokenJwt(userId, jti);
         
-        // 3. Refresh Token JWT 생성
-        Date now = new Date();
-        Date expiration = new Date(now.getTime() + jwtProperties.getRefreshToken().getExpiration());
-        
-        String tokenValue = Jwts.builder()
-            .subject(String.valueOf(userId))
-            .id(jti)
-            .issuedAt(now)
-            .expiration(expiration)
-            .signWith(secretKey)
-            .compact();
-        
-        // 4. DB 저장
+        // 3. DB 저장
         saveRefreshTokenToDb(userId, jti, tokenValue);
         
-        // 5. JWT 문자열 반환
         return tokenValue;
     }
 
@@ -128,9 +116,7 @@ public class JwtProvider {
      */
     private void saveRefreshTokenToDb(Long userId, String jti, String tokenValue) {
         String tokenHash = hashToken(tokenValue);
-        long expirationMillis = jwtProperties.getRefreshToken().getExpiration();
-        LocalDateTime expiresAt = LocalDateTime.now().plusSeconds(expirationMillis / 1000);
-        
+        LocalDateTime expiresAt = calculateRefreshTokenExpiration();
         User user = userService.findById(userId);
         
         RefreshToken refreshToken = RefreshToken.builder()
@@ -228,26 +214,59 @@ public class JwtProvider {
     }
 
     /**
-     * Refresh Token 무효화 및 새 토큰 발급
+     * Refresh Token 회전 (Rotation)
+     * - 도메인 로직을 RefreshToken 엔티티에 위임
      * 
      * @param oldRefreshToken 기존 Refresh Token 엔티티
      * @return 새로운 JWT 문자열
      */
     @Transactional
     public String rotateRefreshToken(RefreshToken oldRefreshToken) {
-        // 1. 기존 토큰 무효화
-        oldRefreshToken.revoke(RevokedReason.ROTATED);
-        refreshTokenRepository.save(oldRefreshToken);
-        
-        // 2. 새 토큰 발급
         Long userId = oldRefreshToken.getUser().getId();
-        return generateRefreshToken(userId);
+        
+        // 1. 새 토큰 생성 (JWT 문자열, JTI, 해시, 만료시각)
+        String newJti = UUID.randomUUID().toString();
+        String newTokenValue = buildRefreshTokenJwt(userId, newJti);
+        String newTokenHash = hashToken(newTokenValue);
+        LocalDateTime newExpiresAt = calculateRefreshTokenExpiration();
+        
+        // 2. 도메인 로직 실행: 기존 토큰 폐기 + 새 토큰 생성
+        RefreshToken newRefreshToken = oldRefreshToken.rotate(newJti, newTokenHash, newExpiresAt);
+        
+        // 3. 영속화
+        refreshTokenRepository.save(oldRefreshToken);
+        refreshTokenRepository.save(newRefreshToken);
+        
+        return newTokenValue;
+    }
+    
+    /**
+     * Refresh Token JWT 문자열 생성 (내부 헬퍼)
+     */
+    private String buildRefreshTokenJwt(Long userId, String jti) {
+        Date now = new Date();
+        Date expiration = new Date(now.getTime() + jwtProperties.getRefreshToken().getExpiration());
+        
+        return Jwts.builder()
+            .subject(String.valueOf(userId))
+            .id(jti)
+            .issuedAt(now)
+            .expiration(expiration)
+            .signWith(secretKey)
+            .compact();
+    }
+    
+    /**
+     * Refresh Token 만료 시각 계산 (내부 헬퍼)
+     */
+    private LocalDateTime calculateRefreshTokenExpiration() {
+        return LocalDateTime.now()
+            .plusSeconds(jwtProperties.getRefreshToken().getExpiration() / 1000);
     }
     
     /**
      * Refresh Token 로그아웃 처리 (폐기)
      * - 이미 폐기된 토큰이면 RefreshTokenRevokedException 발생
-     * - 유효하지 않은 토큰이면 해당 예외 발생
      * 
      * @param refreshTokenValue 로그아웃할 Refresh Token JWT 문자열
      * @throws AuthExceptions.RefreshTokenRevokedException 이미 폐기된 토큰
@@ -257,11 +276,13 @@ public class JwtProvider {
      */
     @Transactional
     public void revokeRefreshTokenForLogout(String refreshTokenValue) {
-        // 1. Refresh Token 검증 및 조회 (예외 발생 시 그대로 throw)
+        // 1. Refresh Token 검증 및 조회
         RefreshToken refreshToken = validateAndGetRefreshToken(refreshTokenValue);
         
         // 2. LOGOUT 이유로 폐기
-        refreshToken.revoke(RevokedReason.LOGOUT);
+        refreshToken.logout();
+        
+        // 3. 영속화
         refreshTokenRepository.save(refreshToken);
     }
 }

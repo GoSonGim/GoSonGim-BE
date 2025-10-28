@@ -78,6 +78,36 @@ public class RefreshToken extends BaseEntity{
     }
 
     /**
+     * 토큰 회전 (Rotation)
+     * - 현재 토큰을 ROTATED 사유로 폐기
+     * 
+     * @param newJti 새로운 JWT ID
+     * @param newTokenHash 새로운 토큰 해시
+     * @param newExpiresAt 새로운 만료 시각
+     * @return 새로운 RefreshToken 엔티티
+     */
+    public RefreshToken rotate(String newJti, String newTokenHash, LocalDateTime newExpiresAt) {
+        // 1. 현재 토큰 폐기
+        this.revoke(RevokedReason.ROTATED);
+        
+        // 2. 새 토큰 생성
+        return RefreshToken.builder()
+            .user(this.user)
+            .jti(newJti)
+            .tokenHash(newTokenHash)
+            .expiresAt(newExpiresAt)
+            .build();
+    }
+
+    /**
+     * 로그아웃 처리
+     * - LOGOUT 사유로 토큰 폐기
+     */
+    public void logout() {
+        this.revoke(RevokedReason.LOGOUT);
+    }
+
+    /**
      * 토큰 만료 여부
      */
     public boolean isExpired() {
