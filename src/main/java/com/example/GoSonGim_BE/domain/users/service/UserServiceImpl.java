@@ -5,6 +5,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.example.GoSonGim_BE.domain.users.entity.User;
 import com.example.GoSonGim_BE.domain.users.repository.UserRepository;
+import com.example.GoSonGim_BE.domain.users.exception.UserExceptions;
 
 import lombok.RequiredArgsConstructor;
 
@@ -19,5 +20,12 @@ public class UserServiceImpl implements UserService {
     public User createDefaultUser() {
         User user = User.createDefault();
         return userRepository.save(user);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public User findById(Long userId) {
+        return userRepository.findById(userId)
+            .orElseThrow(() -> new UserExceptions.UserNotFoundException(userId));
     }
 }

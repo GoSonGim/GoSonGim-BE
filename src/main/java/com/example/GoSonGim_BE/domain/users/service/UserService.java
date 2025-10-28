@@ -7,4 +7,9 @@ public interface UserService {
      * 기본 사용자 생성
      */
     User createDefaultUser();
+
+    /**
+     * 사용자 조회
+     */
+    User findById(Long userId);
 }

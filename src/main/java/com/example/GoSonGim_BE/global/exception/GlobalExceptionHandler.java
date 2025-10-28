@@ -4,6 +4,7 @@ import com.example.GoSonGim_BE.domain.auth.exception.AuthExceptions;
 import com.example.GoSonGim_BE.domain.users.exception.UserExceptions;
 import com.example.GoSonGim_BE.global.dto.ApiErrorResponse;
 import com.example.GoSonGim_BE.global.util.ExceptionResponseUtil;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -13,9 +14,11 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 /**
  * 전역 예외 처리 핸들러
  * 
- * @author GoSonGim Team
- * @since 1.0.0
+ * - BaseException 기반의 커스텀 예외를 일관된 형식으로 처리
+ * - Validation 예외 처리
+ * - 예상치 못한 예외에 대한 Fallback 처리
  */
+@Slf4j
 @RestControllerAdvice
 public class GlobalExceptionHandler {
     
@@ -28,6 +31,16 @@ public class GlobalExceptionHandler {
         AuthExceptions.InvalidEmailFormatException.class,
         AuthExceptions.InvalidCredentialsException.class,
         AuthExceptions.UserDeletedException.class,
+        
+        // JWT 도메인 예외
+        AuthExceptions.InvalidRefreshTokenException.class,
+        AuthExceptions.RefreshTokenExpiredException.class,
+        AuthExceptions.RefreshTokenRevokedException.class,
+        AuthExceptions.RefreshTokenNotFoundException.class,
+        
+        // OAuth 도메인 예외
+        AuthExceptions.InvalidRedirectUriException.class,
+        AuthExceptions.OAuthTokenInvalidException.class,
         
         // User 도메인 예외
         UserExceptions.UserAlreadyDeletedException.class,
@@ -83,7 +96,21 @@ public class GlobalExceptionHandler {
             return HttpStatus.UNAUTHORIZED;
         }
         if (e instanceof AuthExceptions.UserDeletedException) {
-            return HttpStatus.GONE;  // 410 Gone - 리소천가 영구적으로 삭제됨
+            return HttpStatus.GONE;  // 410 Gone - 리소스가 영구적으로 삭제됨
+        }
+        
+        // JWT 도메인 예외
+        if (e instanceof AuthExceptions.InvalidRefreshTokenException ||
+            e instanceof AuthExceptions.RefreshTokenExpiredException ||
+            e instanceof AuthExceptions.RefreshTokenRevokedException ||
+            e instanceof AuthExceptions.RefreshTokenNotFoundException) {
+            return HttpStatus.UNAUTHORIZED;
+        }
+        
+        // OAuth 도메인 예외
+        if (e instanceof AuthExceptions.InvalidRedirectUriException ||
+            e instanceof AuthExceptions.OAuthTokenInvalidException) {
+            return HttpStatus.BAD_REQUEST;
         }
         
         // User 도메인 예외
