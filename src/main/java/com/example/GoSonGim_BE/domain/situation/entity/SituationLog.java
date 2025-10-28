@@ -1,29 +1,44 @@
 package com.example.GoSonGim_BE.domain.situation.entity;
 
-import com.example.GoSonGim_BE.domain.users.entity.User;
-import jakarta.persistence.*;
-import lombok.*;
 import org.hibernate.annotations.Comment;
-import org.springframework.data.annotation.CreatedDate;
-import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
-import java.time.LocalDateTime;
+import com.example.GoSonGim_BE.domain.users.entity.User;
+import com.example.GoSonGim_BE.global.entity.BaseEntity;
+
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.Index;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.Table;
+import lombok.AccessLevel;
+import lombok.Builder;
+import lombok.EqualsAndHashCode;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
 
 /**
  * 상황극 학습 기록
  */
 @Entity
-@Table(name = "situation_log")
-@EntityListeners(AuditingEntityListener.class)
+@Table(name = "situation_log", indexes = {
+    @Index(name = "idx_situation_log_user", columnList = "user_id"),
+    @Index(name = "idx_situation_log_situation", columnList = "situation_id"),
+    @Index(name = "idx_situation_log_created", columnList = "created_at")
+})
 @Getter
+@EqualsAndHashCode(onlyExplicitlyIncluded = true, callSuper = false)
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-@AllArgsConstructor
-@Builder
-public class SituationLog {
+public class SituationLog extends BaseEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id")
+    @EqualsAndHashCode.Include
     private Long id;
 
     @Comment("상황극 참조")
@@ -64,8 +79,18 @@ public class SituationLog {
     @Column(name = "evaluation_feedback", columnDefinition = "LONGTEXT")
     private String evaluationFeedback;
 
-    @CreatedDate
-    @Comment("생성 일시")
-    @Column(name = "created_at", nullable = false, updatable = false)
-    private LocalDateTime createdAt;
+    @Builder
+    public SituationLog(Situation situation, User user, String aiVideoUrl,
+                        String audioFileKey, String targetWord, String conversation,
+                        Boolean isSuccess, Float evaluationScore, String evaluationFeedback) {
+        this.situation = situation;
+        this.user = user;
+        this.aiVideoUrl = aiVideoUrl;
+        this.audioFileKey = audioFileKey;
+        this.targetWord = targetWord;
+        this.conversation = conversation;
+        this.isSuccess = isSuccess;
+        this.evaluationScore = evaluationScore;
+        this.evaluationFeedback = evaluationFeedback;
+    }
 }
