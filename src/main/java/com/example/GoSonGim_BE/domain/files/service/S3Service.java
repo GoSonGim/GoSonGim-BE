@@ -2,6 +2,7 @@ package com.example.GoSonGim_BE.domain.files.service;
 
 import com.example.GoSonGim_BE.domain.files.exception.FilesExceptions;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
@@ -18,6 +19,7 @@ import java.time.Duration;
 import java.time.LocalDate;
 import java.util.UUID;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class S3Service {
@@ -27,15 +29,12 @@ public class S3Service {
     @Value("${aws.s3.bucket}")
     private String bucketName;
 
-    // 업로드용 Presigned URL 생성
-    public URL generateUploadPresignedUrl(String folder, String fileName, int expirationMinutes, String userId) {
-        String dateFolder = LocalDate.now().toString(); // 2025-10-09
-        String uniqueFileName = userId + "_" + UUID.randomUUID() + "_" + fileName;
-        String key = String.format("%s/%s/%s", folder, dateFolder, uniqueFileName);
+    // 업로드용 Presigned URL 생성 (fileKey를 직접 받아서 사용)
+    public URL generateUploadPresignedUrl(String fileKey, int expirationMinutes) {
 
         PutObjectRequest objectRequest = PutObjectRequest.builder()
                 .bucket(bucketName)
-                .key(key)
+                .key(fileKey)
                 .build();
 
         PutObjectPresignRequest presignRequest = PutObjectPresignRequest.builder()
@@ -66,9 +65,15 @@ public class S3Service {
     // S3에서 파일을 InputStream으로 다운로드
     public InputStream downloadFileAsStream(String fileKey) {
         try {
+            log.info("Attempting to download file: {}", fileKey);
             URL presignedUrl = generateDownloadPresignedUrl(fileKey, 10);
-            return presignedUrl.openStream();
+            log.info("Generated presigned URL: {}", presignedUrl.toString());
+            
+            InputStream stream = presignedUrl.openStream();
+            log.info("Successfully opened stream for file: {}", fileKey);
+            return stream;
         } catch (Exception e) {
+            log.error("Failed to download file: {} - Error: {}", fileKey, e.getMessage(), e);
             throw new FilesExceptions.S3DownloadFailed(fileKey);
         }
     }
