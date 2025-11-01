@@ -3,6 +3,8 @@ package com.example.GoSonGim_BE.domain.kit.service.impl;
 import com.example.GoSonGim_BE.domain.files.service.S3Service;
 import com.example.GoSonGim_BE.domain.kit.dto.request.EvaluateRequest;
 import com.example.GoSonGim_BE.domain.kit.dto.request.LogRequest;
+import com.example.GoSonGim_BE.domain.kit.dto.response.DiagnosticResponse;
+import org.springframework.web.multipart.MultipartFile;
 import com.example.GoSonGim_BE.domain.kit.dto.response.EvaluateResponse;
 import com.example.GoSonGim_BE.domain.kit.dto.response.KitCategoriesResponse;
 import com.example.GoSonGim_BE.domain.kit.dto.response.KitStagesResponse;
@@ -260,6 +262,100 @@ public class KitServiceImpl implements KitService {
             .build();
 
         kitStageLogRepository.save(log);
+    }
+    
+    @Override
+    public DiagnosticResponse diagnosePronunciation(MultipartFile audioFile, String targetText) {
+        try (InputStream audioStream = audioFile.getInputStream()) {
+            
+            // Azure Speech Service API 호출
+            PronunciationAssessmentResponse result = pronunciationAssessmentService.assessPronunciation(
+                    audioStream,
+                    targetText
+            );
+            
+            double accuracy = result.accuracy();
+            double fluency = result.fluency();
+            double completeness = result.completeness();
+            double prosody = result.prosody();
+            
+            // 종합 점수 계산
+            double overallScore = (accuracy + fluency + completeness + prosody) / 4.0;
+            overallScore = Math.round(overallScore * 10.0) / 10.0; // 소수점 첫째자리까지 반올림
+            
+            // 점수 기반 키트 추천
+            List<DiagnosticResponse.RecommendedKit> recommendedKits = generateKitRecommendations(
+                    accuracy, fluency, completeness, prosody
+            );
+            
+            return new DiagnosticResponse(
+                result.recognizedText(),
+                new DiagnosticResponse.Scores(accuracy, fluency, completeness, prosody),
+                overallScore,
+                recommendedKits
+            );
+            
+        } catch (Exception e) {
+            log.error("진단 평가 실패: {}", e.getMessage(), e);
+            throw new KitExceptions.PronunciationAssessmentFailed(e.getMessage());
+        }
+    }
+    
+    private List<DiagnosticResponse.RecommendedKit> generateKitRecommendations(
+            double accuracy, double fluency, double completeness, double prosody) {
+        
+        List<DiagnosticResponse.RecommendedKit> recommendations = new ArrayList<>();
+        double averageScore = (accuracy + fluency + completeness + prosody) / 4.0;
+        
+        // accuracy 기준 추천
+        if (accuracy < 60) {
+            recommendations.add(new DiagnosticResponse.RecommendedKit(6L, "목구멍 소리 키트"));
+            recommendations.add(new DiagnosticResponse.RecommendedKit(4L, "입술 소리 키트"));
+        } else if (accuracy < 70) {
+            recommendations.add(new DiagnosticResponse.RecommendedKit(5L, "혀끝 소리 키트"));
+            recommendations.add(new DiagnosticResponse.RecommendedKit(7L, "잇몸 소리 키트"));
+        } else if (accuracy < 75) {
+            recommendations.add(new DiagnosticResponse.RecommendedKit(8L, "파열음 키트"));
+        }
+        
+        // fluency 기준 추천
+        if (fluency < 30) {
+            recommendations.add(new DiagnosticResponse.RecommendedKit(2L, "일정한 소리내기 키트"));
+            recommendations.add(new DiagnosticResponse.RecommendedKit(1L, "길게 소리내기 키트"));
+        } else if (fluency < 60) {
+            recommendations.add(new DiagnosticResponse.RecommendedKit(10L, "유음/비음 키트"));
+        }
+        
+        // completeness 기준 추천
+        if (completeness < 30) {
+            recommendations.add(new DiagnosticResponse.RecommendedKit(2L, "일정한 소리내기 키트"));
+        } else if (completeness < 60) {
+            recommendations.add(new DiagnosticResponse.RecommendedKit(9L, "마찰음 키트"));
+        }
+        
+        // prosody 기준 추천
+        if (prosody < 30) {
+            recommendations.add(new DiagnosticResponse.RecommendedKit(3L, "큰 소리내기 키트"));
+            recommendations.add(new DiagnosticResponse.RecommendedKit(11L, "턱 움직임 키트"));
+        } else if (prosody < 60) {
+            recommendations.add(new DiagnosticResponse.RecommendedKit(1L, "길게 소리내기 키트"));
+        }
+        
+        // 종합 평가 기준 추천
+        if (averageScore < 40) {
+            // 40점 미만: 기초부터
+            if (recommendations.stream().noneMatch(kit -> kit.kitId().equals(2L))) {
+                recommendations.add(new DiagnosticResponse.RecommendedKit(2L, "일정한 소리내기 키트"));
+            }
+            if (recommendations.stream().noneMatch(kit -> kit.kitId().equals(6L))) {
+                recommendations.add(new DiagnosticResponse.RecommendedKit(6L, "목구멍 소리 키트"));
+            }
+        }
+        
+        // 중복 제거
+        return recommendations.stream()
+                .distinct()
+                .collect(Collectors.toList());
     }
 
 }

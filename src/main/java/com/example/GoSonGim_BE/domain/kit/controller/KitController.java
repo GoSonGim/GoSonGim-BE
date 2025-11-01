@@ -2,6 +2,7 @@ package com.example.GoSonGim_BE.domain.kit.controller;
 
 import com.example.GoSonGim_BE.domain.kit.dto.request.EvaluateRequest;
 import com.example.GoSonGim_BE.domain.kit.dto.request.LogRequest;
+import com.example.GoSonGim_BE.domain.kit.dto.response.DiagnosticResponse;
 import com.example.GoSonGim_BE.domain.kit.dto.response.EvaluateResponse;
 import com.example.GoSonGim_BE.domain.kit.dto.response.KitCategoriesResponse;
 import com.example.GoSonGim_BE.domain.kit.dto.response.KitStagesResponse;
@@ -12,8 +13,10 @@ import jakarta.validation.Valid;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 
 
@@ -75,6 +78,19 @@ public class KitController {
         Long userId = 1L;
         kitService.saveStudyLog(request, userId);
         ApiResponse<Void> apiResponse = ApiResponse.success(200, "학습 기록이 저장되었습니다.", null);
+        return ResponseEntity.ok(apiResponse);
+    }
+    
+    /**
+     * 조음 키트 진단 평가
+     * WAV 파일과 목표 텍스트를 받아 발음을 평가하고 키트를 추천
+     */
+    @PostMapping(value = "/kits/diagnosis", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<ApiResponse<DiagnosticResponse>> diagnosePronunciation(
+            @RequestPart("audioFile") MultipartFile audioFile,
+            @RequestParam("targetText") String targetText) {
+        DiagnosticResponse response = kitService.diagnosePronunciation(audioFile, targetText);
+        ApiResponse<DiagnosticResponse> apiResponse = ApiResponse.success(200, "키트 진단이 성공적으로 처리되었습니다.", response);
         return ResponseEntity.ok(apiResponse);
     }
 }

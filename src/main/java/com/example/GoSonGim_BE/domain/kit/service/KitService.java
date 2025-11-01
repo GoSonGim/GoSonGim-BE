@@ -2,6 +2,8 @@ package com.example.GoSonGim_BE.domain.kit.service;
 
 import com.example.GoSonGim_BE.domain.kit.dto.request.EvaluateRequest;
 import com.example.GoSonGim_BE.domain.kit.dto.request.LogRequest;
+import com.example.GoSonGim_BE.domain.kit.dto.response.DiagnosticResponse;
+import org.springframework.web.multipart.MultipartFile;
 import java.util.List;
 import com.example.GoSonGim_BE.domain.kit.dto.response.EvaluateResponse;
 import com.example.GoSonGim_BE.domain.kit.dto.response.KitCategoriesResponse;
@@ -25,4 +27,7 @@ public interface KitService {
     
     // 조음 키트 단어 외 학습 기록 저장
     void saveStudyLog(LogRequest request, Long userId);
+    
+    // 조음 키트 진단 평가
+    DiagnosticResponse diagnosePronunciation(MultipartFile audioFile, String targetText);
 }
