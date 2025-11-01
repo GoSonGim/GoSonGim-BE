@@ -125,7 +125,6 @@ public class KitServiceImpl implements KitService {
             KitStageLog log = KitStageLog.builder()
                 .kitStage(kitStage)
                 .user(user)
-                .name(null) //Todo name의 사용처
                 .targetWord(request.targetWord())
                 .audioFileKey(request.fileKey())
                 .evaluationScore((float) evaluationScore)
