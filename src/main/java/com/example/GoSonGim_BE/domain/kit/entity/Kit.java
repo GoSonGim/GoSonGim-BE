@@ -24,13 +24,14 @@ public class Kit extends BaseEntity {
     @Column(name = "id")
     private Long id;
 
-    @Comment("키트 카테고리")
-    @Column(name = "kit_category", nullable = false)
-    private String kitCategory;
-
     @Comment("키트명")
     @Column(name = "kit_name", nullable = false)
     private String kitName;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "kit_category_id", nullable = false)
+    @Comment("키트 카테고리")
+    private KitCategory kitCategory;
 
     @OneToMany(mappedBy = "kit", cascade = CascadeType.ALL)
     @Builder.Default
