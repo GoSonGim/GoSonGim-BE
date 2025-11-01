@@ -8,6 +8,7 @@ import com.example.GoSonGim_BE.domain.kit.dto.response.KitsResponse;
 import com.example.GoSonGim_BE.domain.kit.service.KitService;
 import com.example.GoSonGim_BE.global.dto.ApiResponse;
 import jakarta.validation.Valid;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 
 import org.springframework.http.ResponseEntity;
@@ -57,9 +58,9 @@ public class KitController {
      * Azure Speech Service를 통해 발음을 평가하고 결과를 저장
      */
     @PostMapping("/kits/stages/evaluate")
-    public ResponseEntity<ApiResponse<EvaluateResponse>> evaluatePronunciation(@Valid @RequestBody EvaluateRequest request) {
+    public ResponseEntity<ApiResponse<EvaluateResponse>> evaluatePronunciation(@Valid @RequestBody List<EvaluateRequest> evaluations) {
         Long userId = 1L;
-        EvaluateResponse response = kitService.evaluatePronunciation(request, userId);
+        EvaluateResponse response = kitService.evaluatePronunciation(evaluations, userId);
         ApiResponse<EvaluateResponse> apiResponse = ApiResponse.success(200, "발음 평가가 완료되었습니다.", response);
         return ResponseEntity.ok(apiResponse);
     }

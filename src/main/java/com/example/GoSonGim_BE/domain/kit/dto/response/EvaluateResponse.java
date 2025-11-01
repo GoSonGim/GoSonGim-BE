@@ -1,12 +1,25 @@
 package com.example.GoSonGim_BE.domain.kit.dto.response;
 
+import java.util.List;
+
 public record EvaluateResponse(
-    Long kitStageId,
-    String targetWord,
-    PronunciationScore pronunciation,
-    double evaluationScore,
-    boolean isSuccess
+    List<IndividualResult> individualResults,
+    OverallResult overallResult
 ) {
+    
+    public record IndividualResult(
+        Long kitStageId,
+        String targetWord,
+        String recognizedText,
+        PronunciationScore pronunciation,
+        double evaluationScore,
+        boolean isSuccess
+    ) {}
+    
+    public record OverallResult(
+        double overallScore,
+        String overallFeedback
+    ) {}
     
     public record PronunciationScore(
         double accuracy,

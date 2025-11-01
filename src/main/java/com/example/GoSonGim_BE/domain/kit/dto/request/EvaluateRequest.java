@@ -7,10 +7,10 @@ public record EvaluateRequest(
     @NotNull(message = "kitStageId는 필수입니다.")
     Long kitStageId,
     
-    @NotBlank(message = "targetWord는 필수입니다.")
-    String targetWord,
-    
     @NotBlank(message = "fileKey는 필수입니다.")
-    String fileKey
+    String fileKey,
+    
+    @NotBlank(message = "targetWord는 필수입니다.")
+    String targetWord
 ) {
 }
