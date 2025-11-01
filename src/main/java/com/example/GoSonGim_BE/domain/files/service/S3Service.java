@@ -5,6 +5,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 import software.amazon.awssdk.services.s3.model.GetObjectRequest;
 import software.amazon.awssdk.services.s3.presigner.S3Presigner;
@@ -25,6 +26,7 @@ import java.util.UUID;
 public class S3Service {
 
     private final S3Presigner s3Presigner;
+    private final S3Client s3Client;
 
     @Value("${aws.s3.bucket}")
     private String bucketName;
@@ -66,11 +68,14 @@ public class S3Service {
     public InputStream downloadFileAsStream(String fileKey) {
         try {
             log.info("Attempting to download file: {}", fileKey);
-            URL presignedUrl = generateDownloadPresignedUrl(fileKey, 10);
-            log.info("Generated presigned URL: {}", presignedUrl.toString());
             
-            InputStream stream = presignedUrl.openStream();
-            log.info("Successfully opened stream for file: {}", fileKey);
+            GetObjectRequest getObjectRequest = GetObjectRequest.builder()
+                    .bucket(bucketName)
+                    .key(fileKey)
+                    .build();
+            
+            InputStream stream = s3Client.getObject(getObjectRequest);
+            log.info("Successfully downloaded file using S3Client: {}", fileKey);
             return stream;
         } catch (Exception e) {
             log.error("Failed to download file: {} - Error: {}", fileKey, e.getMessage(), e);
