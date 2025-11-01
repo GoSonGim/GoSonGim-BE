@@ -1,0 +1,31 @@
+package com.example.GoSonGim_BE.domain.situation.service;
+
+import org.springframework.stereotype.Service;
+
+import com.example.GoSonGim_BE.domain.situation.dto.request.SituationCreateRequest;
+import com.example.GoSonGim_BE.domain.situation.dto.response.SituationCreateResponse;
+import com.example.GoSonGim_BE.domain.situation.entity.Situation;
+import com.example.GoSonGim_BE.domain.situation.repository.SituationRepository;
+
+import lombok.RequiredArgsConstructor;
+
+@Service
+@RequiredArgsConstructor
+public class SituationServiceImpl implements SituationService {
+
+    private final SituationRepository situationRepository;
+
+    @Override
+    public SituationCreateResponse createSituation(SituationCreateRequest request) {
+        Situation situation = Situation.builder()
+            .situationCategory(request.situationCategory())
+            .situationName(request.situationName())
+            .description(request.description())
+            .image(request.image())
+            .build();
+
+        Situation savedSituation = situationRepository.save(situation);
+        
+        return SituationCreateResponse.from(savedSituation);
+    }
+}
