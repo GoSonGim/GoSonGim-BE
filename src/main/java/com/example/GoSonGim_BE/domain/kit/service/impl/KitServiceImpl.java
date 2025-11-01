@@ -2,6 +2,7 @@ package com.example.GoSonGim_BE.domain.kit.service.impl;
 
 import com.example.GoSonGim_BE.domain.files.service.S3Service;
 import com.example.GoSonGim_BE.domain.kit.dto.request.EvaluateRequest;
+import com.example.GoSonGim_BE.domain.kit.dto.request.LogRequest;
 import com.example.GoSonGim_BE.domain.kit.dto.response.EvaluateResponse;
 import com.example.GoSonGim_BE.domain.kit.dto.response.KitCategoriesResponse;
 import com.example.GoSonGim_BE.domain.kit.dto.response.KitStagesResponse;
@@ -234,6 +235,31 @@ public class KitServiceImpl implements KitService {
                    "연습해보세요. 지금은 어렵게 느껴질 수 있지만, 몇 개월 후에는 분명 놀라운 변화를 " +
                    "경험하실 수 있을 거예요. 화이팅!";
         }
+    }
+    
+    @Override
+    @Transactional
+    public void saveStudyLog(LogRequest request, Long userId) {
+        // 1. 유효성 검사 - 사용자 존재 확인
+        User user = userRepository.findById(userId)
+            .orElseThrow(KitExceptions.UserNotFound::new);
+        
+        // 2. KitStage 존재 확인
+        KitStage kitStage = kitStageRepository.findById(request.kitStageId())
+            .orElseThrow(KitExceptions.KitStageNotFound::new);
+        
+        // 3. 학습 기록 저장
+        KitStageLog log = KitStageLog.builder()
+            .kitStage(kitStage)
+            .user(user)
+            .targetWord(null)  // 단어 외 학습이므로 null
+            .audioFileKey(request.fileKey())
+            .evaluationScore(request.evaluationScore().floatValue())
+            .evaluationFeedback(request.evaluationFeedback())
+            .isSuccess(request.isSuccess())
+            .build();
+
+        kitStageLogRepository.save(log);
     }
 
 }

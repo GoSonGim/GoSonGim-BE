@@ -1,6 +1,7 @@
 package com.example.GoSonGim_BE.domain.kit.controller;
 
 import com.example.GoSonGim_BE.domain.kit.dto.request.EvaluateRequest;
+import com.example.GoSonGim_BE.domain.kit.dto.request.LogRequest;
 import com.example.GoSonGim_BE.domain.kit.dto.response.EvaluateResponse;
 import com.example.GoSonGim_BE.domain.kit.dto.response.KitCategoriesResponse;
 import com.example.GoSonGim_BE.domain.kit.dto.response.KitStagesResponse;
@@ -62,6 +63,18 @@ public class KitController {
         Long userId = 1L;
         EvaluateResponse response = kitService.evaluatePronunciation(evaluations, userId);
         ApiResponse<EvaluateResponse> apiResponse = ApiResponse.success(200, "발음 평가가 완료되었습니다.", response);
+        return ResponseEntity.ok(apiResponse);
+    }
+    
+    /**
+     * 조음 키트 단어 외 학습 기록 저장
+     * 발음 평가 없이 직접 학습 기록을 저장
+     */
+    @PostMapping("/kits/stages/log")
+    public ResponseEntity<ApiResponse<Void>> saveStudyLog(@Valid @RequestBody LogRequest request) {
+        Long userId = 1L;
+        kitService.saveStudyLog(request, userId);
+        ApiResponse<Void> apiResponse = ApiResponse.success(200, "학습 기록이 저장되었습니다.", null);
         return ResponseEntity.ok(apiResponse);
     }
 }

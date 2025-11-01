@@ -1,6 +1,7 @@
 package com.example.GoSonGim_BE.domain.kit.service;
 
 import com.example.GoSonGim_BE.domain.kit.dto.request.EvaluateRequest;
+import com.example.GoSonGim_BE.domain.kit.dto.request.LogRequest;
 import java.util.List;
 import com.example.GoSonGim_BE.domain.kit.dto.response.EvaluateResponse;
 import com.example.GoSonGim_BE.domain.kit.dto.response.KitCategoriesResponse;
@@ -21,4 +22,7 @@ public interface KitService {
     
     // 조음 키트 단어 발음 평가
     EvaluateResponse evaluatePronunciation(List<EvaluateRequest> evaluations, Long userId);
+    
+    // 조음 키트 단어 외 학습 기록 저장
+    void saveStudyLog(LogRequest request, Long userId);
 }
