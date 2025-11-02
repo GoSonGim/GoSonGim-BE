@@ -48,6 +48,10 @@ dependencies {
 	testImplementation 'org.springframework.boot:spring-boot-starter-test'
 	testImplementation 'org.springframework.security:spring-security-test'
 	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+
+	//azure-sdk
+	implementation group: 'com.microsoft.cognitiveservices.speech', name: 'client-sdk', version: "1.43.0", ext: "jar"
+
 }
 
 tasks.named('test') {

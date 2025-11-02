@@ -36,9 +36,6 @@ public class KitStageLog {
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
-    @Comment("이름")
-    @Column(name = "name", nullable = false)
-    private String name;
 
     @Comment("평가 결과")
     @Column(name = "evaluation_score")

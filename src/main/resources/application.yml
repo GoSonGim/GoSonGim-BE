@@ -4,7 +4,7 @@ spring:
       - datasource
       - auth
       - s3
-      #- azure
+      - azure
       #- redis
 
   config:
