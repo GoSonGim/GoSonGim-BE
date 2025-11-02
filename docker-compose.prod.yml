@@ -3,7 +3,7 @@ version: '3.8'
 services:
   # Spring Boot 애플리케이션
   app:
-    image: ${DOCKER_IMAGE:-gosongim-be}:${DOCKER_TAG:-latest}
+    image: ${DOCKER_IMAGE:-gosongim/docker-setup}:${DOCKER_TAG:-latest}
     container_name: gosongim-app
     env_file:
       - .env

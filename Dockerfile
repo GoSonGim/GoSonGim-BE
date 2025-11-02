@@ -1,5 +1,5 @@
-# 빌드 스테이지
-FROM gradle:8.5-jdk17 AS build
+# 빌드 스테이지 (Linux x86_64 플랫폼 지정)
+FROM --platform=linux/amd64 gradle:8.5-jdk17 AS build
 WORKDIR /app
 
 # Gradle 빌드 설정
@@ -20,8 +20,8 @@ COPY src ./src
 # 빌드 실행
 RUN gradle bootJar --no-daemon -x test
 
-# 실행 스테이지
-FROM eclipse-temurin:17-jre
+# 실행 스테이지 (Linux x86_64 플랫폼 지정)
+FROM --platform=linux/amd64 eclipse-temurin:17-jre
 WORKDIR /app
 
 # 타임존 설정
