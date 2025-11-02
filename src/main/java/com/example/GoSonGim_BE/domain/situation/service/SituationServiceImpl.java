@@ -62,7 +62,14 @@ public class SituationServiceImpl implements SituationService {
             log.debug("Found {} situations", situations.size());
         }
         
-        return SituationListResponse.from(situations);
+        List<SituationListResponse.SituationItem> items = situations.stream()
+            .map(situation -> new SituationListResponse.SituationItem(
+                situation.getId(),
+                situation.getSituationName()
+            ))
+            .toList();
+        
+        return new SituationListResponse(items);
     }
 
     @Override
