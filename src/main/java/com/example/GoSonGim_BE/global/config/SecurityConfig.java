@@ -31,7 +31,9 @@ public class SecurityConfig {
             ApiVersion.CURRENT + "/kits/**",
             ApiVersion.CURRENT + "/health",
             ApiVersion.CURRENT + "/ready",
-            ApiVersion.CURRENT + "/live"
+            ApiVersion.CURRENT + "/live",
+            "/error",  // 에러 핸들러 경로는 인증 불필요
+            "/error/**"
     };
 
     @Bean
