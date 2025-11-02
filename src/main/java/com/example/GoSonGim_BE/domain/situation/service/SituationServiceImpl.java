@@ -1,6 +1,7 @@
 package com.example.GoSonGim_BE.domain.situation.service;
 
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.example.GoSonGim_BE.domain.situation.dto.request.SituationCreateRequest;
 import com.example.GoSonGim_BE.domain.situation.dto.response.SituationCreateResponse;
@@ -16,6 +17,7 @@ public class SituationServiceImpl implements SituationService {
     private final SituationRepository situationRepository;
 
     @Override
+    @Transactional
     public SituationCreateResponse createSituation(SituationCreateRequest request) {
         Situation situation = Situation.builder()
             .situationCategory(request.situationCategory())
