@@ -7,9 +7,11 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.example.GoSonGim_BE.domain.situation.dto.request.SituationCreateRequest;
 import com.example.GoSonGim_BE.domain.situation.dto.response.SituationCreateResponse;
+import com.example.GoSonGim_BE.domain.situation.dto.response.SituationDetailResponse;
 import com.example.GoSonGim_BE.domain.situation.dto.response.SituationListResponse;
 import com.example.GoSonGim_BE.domain.situation.entity.Situation;
 import com.example.GoSonGim_BE.domain.situation.entity.SituationCategory;
+import com.example.GoSonGim_BE.domain.situation.exception.SituationExceptions;
 import com.example.GoSonGim_BE.domain.situation.repository.SituationRepository;
 
 import lombok.RequiredArgsConstructor;
@@ -35,7 +37,13 @@ public class SituationServiceImpl implements SituationService {
 
         Situation savedSituation = situationRepository.save(situation);
         
-        return SituationCreateResponse.from(savedSituation);
+        return new SituationCreateResponse(
+            savedSituation.getId(),
+            savedSituation.getSituationCategory().name(),
+            savedSituation.getSituationName(),
+            savedSituation.getDescription(),
+            savedSituation.getImage()
+        );
     }
 
     @Override
@@ -55,5 +63,18 @@ public class SituationServiceImpl implements SituationService {
         }
         
         return SituationListResponse.from(situations);
+    }
+
+    @Override
+    public SituationDetailResponse getSituationById(Long situationId) {
+        Situation situation = situationRepository.findById(situationId)
+            .orElseThrow(() -> new SituationExceptions.SituationNotFoundException(situationId));
+        
+        return new SituationDetailResponse(
+            situation.getId(),
+            situation.getSituationName(),
+            situation.getDescription(),
+            situation.getImage()
+        );
     }
 }
