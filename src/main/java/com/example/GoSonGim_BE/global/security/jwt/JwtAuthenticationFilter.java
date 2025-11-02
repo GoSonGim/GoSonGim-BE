@@ -28,15 +28,6 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     private final JwtProvider jwtProvider;
     private final UserService userService;
 
-    /**
-     * /auth/** 경로는 JWT 검증 건너뛰기
-     */
-    @Override
-    protected boolean shouldNotFilter(HttpServletRequest request) throws ServletException {
-        String path = request.getRequestURI();
-        return path.startsWith(ApiVersion.CURRENT + "/auth");
-    }
-
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {    
         // 1. Authorization Header에서 토큰 추출

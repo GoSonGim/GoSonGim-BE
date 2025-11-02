@@ -25,12 +25,12 @@ public class S3Controller {
                                                  @RequestParam String fileName,
                                                  @RequestParam String userId) {
 
-        URL uploadUrl = s3Service.generateUploadPresignedUrl(folder, fileName, 5, userId); // 5분 유효
-
         // fileKey 생성 규칙 통일
         String dateFolder = LocalDate.now().toString();
         String randomUUID = UUID.randomUUID().toString();
         String fileKey = String.format("%s/%s/%s_%s_%s", folder, dateFolder, userId, randomUUID, fileName);
+        
+        URL uploadUrl = s3Service.generateUploadPresignedUrl(fileKey, 30); // 30분 유효
 
         S3PresignedUrlResponse response = new S3PresignedUrlResponse(fileKey, uploadUrl.toString(), 300);
         ApiResponse<S3PresignedUrlResponse> apiResponse = ApiResponse.success(200, "업로드 URL이 생성되었습니다.", response);

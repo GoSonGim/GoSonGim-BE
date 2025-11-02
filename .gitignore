@@ -47,3 +47,6 @@ out/
 
 ### Logs ###
 *.log
+
+###  EC2) ###
+ttobak.pem
