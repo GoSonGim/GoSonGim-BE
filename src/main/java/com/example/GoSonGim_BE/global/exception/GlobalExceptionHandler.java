@@ -1,6 +1,7 @@
 package com.example.GoSonGim_BE.global.exception;
 
 import com.example.GoSonGim_BE.domain.auth.exception.AuthExceptions;
+import com.example.GoSonGim_BE.domain.situation.exception.SituationExceptions;
 import com.example.GoSonGim_BE.domain.users.exception.UserExceptions;
 import com.example.GoSonGim_BE.global.dto.ApiErrorResponse;
 import com.example.GoSonGim_BE.global.util.ExceptionResponseUtil;
@@ -44,7 +45,10 @@ public class GlobalExceptionHandler {
         
         // User 도메인 예외
         UserExceptions.UserAlreadyDeletedException.class,
-        UserExceptions.UserNotDeletedException.class
+        UserExceptions.UserNotDeletedException.class,
+        
+        // Situation 도메인 예외
+        SituationExceptions.SituationNotFoundException.class
     })
     public ResponseEntity<ApiErrorResponse> handleDomainExceptions(BaseException e) {
         HttpStatus status = determineStatus(e);
@@ -145,6 +149,11 @@ public class GlobalExceptionHandler {
         }
         if (e instanceof UserExceptions.UserNotDeletedException) {
             return HttpStatus.BAD_REQUEST;
+        }
+        
+        // Situation 도메인 예외
+        if (e instanceof SituationExceptions.SituationNotFoundException) {
+            return HttpStatus.NOT_FOUND;
         }
         
         return HttpStatus.BAD_REQUEST;
