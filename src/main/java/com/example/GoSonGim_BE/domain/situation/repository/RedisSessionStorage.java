@@ -24,20 +24,14 @@ public class RedisSessionStorage implements SessionStorage {
     private final RedisTemplate<String, Object> redisTemplate;
     
     private static final String KEY_PREFIX = "situation:session:";
-    private static final long DEFAULT_TTL_MINUTES = 30;
     
     @Override
     public void save(SituationSession session) {
         String key = KEY_PREFIX + session.getSessionId();
-        
-        // Redis에 저장
         redisTemplate.opsForValue().set(key, session);
         
-        // TTL 설정 (만료 시간까지)
         Duration ttl = Duration.between(LocalDateTime.now(), session.getExpiresAt());
         redisTemplate.expire(key, ttl.toMinutes(), TimeUnit.MINUTES);
-        
-        log.debug("세션 Redis 저장: {} (TTL: {}분)", session.getSessionId(), ttl.toMinutes());
     }
     
     @Override
@@ -46,15 +40,28 @@ public class RedisSessionStorage implements SessionStorage {
         Object value = redisTemplate.opsForValue().get(key);
         
         if (value == null) {
-            log.debug("세션 없음 또는 만료됨: {}", sessionId);
             return Optional.empty();
         }
         
-        SituationSession session = (SituationSession) value;
+        SituationSession session;
+        if (value instanceof SituationSession) {
+            session = (SituationSession) value;
+        } else {
+            try {
+                com.fasterxml.jackson.databind.ObjectMapper objectMapper = new com.fasterxml.jackson.databind.ObjectMapper();
+                com.fasterxml.jackson.datatype.jsr310.JavaTimeModule javaTimeModule = new com.fasterxml.jackson.datatype.jsr310.JavaTimeModule();
+                objectMapper.registerModule(javaTimeModule);
+                objectMapper.disable(com.fasterxml.jackson.databind.SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
+                
+                String json = objectMapper.writeValueAsString(value);
+                session = objectMapper.readValue(json, SituationSession.class);
+            } catch (Exception e) {
+                log.error("세션 변환 실패: {}", sessionId, e);
+                return Optional.empty();
+            }
+        }
         
-        // 만료 체크 (Redis TTL과 별도로)
         if (session.getExpiresAt().isBefore(LocalDateTime.now())) {
-            log.debug("세션 만료됨: {}", sessionId);
             delete(sessionId);
             return Optional.empty();
         }
@@ -66,7 +73,6 @@ public class RedisSessionStorage implements SessionStorage {
     public void delete(String sessionId) {
         String key = KEY_PREFIX + sessionId;
         redisTemplate.delete(key);
-        log.debug("세션 Redis 삭제: {}", sessionId);
     }
     
     @Override
