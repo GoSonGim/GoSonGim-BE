@@ -22,13 +22,12 @@ public class S3Controller {
     // 업로드용 Presigned URL 발급
     @PostMapping("/upload-url")
     public ResponseEntity<ApiResponse<S3PresignedUrlResponse>> generateUploadUrl(@RequestParam String folder,
-                                                 @RequestParam String fileName,
-                                                 @RequestParam String userId) {
+                                                 @RequestParam String fileName) {
 
         // fileKey 생성 규칙 통일
         String dateFolder = LocalDate.now().toString();
         String randomUUID = UUID.randomUUID().toString();
-        String fileKey = String.format("%s/%s/%s_%s_%s", folder, dateFolder, userId, randomUUID, fileName);
+        String fileKey = String.format("%s/%s/%s_%s", folder, dateFolder, randomUUID, fileName);
         
         URL uploadUrl = s3Service.generateUploadPresignedUrl(fileKey, 30); // 30분 유효
 
