@@ -43,7 +43,7 @@ public class UserController {
     }
 
     /**
-     * 성공 누적 그래프 조회
+     * 날짜별 학습 단어 조회
      */
     @GetMapping("/stats/daily-words")
     public ResponseEntity<ApiResponse<DailyWordsResponse>> getDailyWords(
