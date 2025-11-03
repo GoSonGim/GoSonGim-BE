@@ -18,6 +18,7 @@ import lombok.RequiredArgsConstructor;
 
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -70,8 +71,8 @@ public class KitController {
      */
     @Operation(summary = "조음 키트 단어 발음 평가")
     @PostMapping("/stages/evaluate")
-    public ResponseEntity<ApiResult<EvaluateResponse>> evaluatePronunciation(@Valid @RequestBody List<EvaluateRequest> evaluations) {
-        Long userId = 1L;
+    public ResponseEntity<ApiResult<EvaluateResponse>> evaluatePronunciation(@Valid @RequestBody List<EvaluateRequest> evaluations, Authentication authentication) {
+        Long userId = (Long) authentication.getPrincipal();
         EvaluateResponse response = kitService.evaluatePronunciation(evaluations, userId);
         ApiResult<EvaluateResponse> apiResult = ApiResult.success(200, "발음 평가가 완료되었습니다.", response);
         return ResponseEntity.ok(apiResult);
@@ -83,8 +84,8 @@ public class KitController {
      */
     @Operation(summary = "조음 키트 학습 기록 저장")
     @PostMapping("/stages/log")
-    public ResponseEntity<ApiResult<Void>> saveStudyLog(@Valid @RequestBody LogRequest request) {
-        Long userId = 1L;
+    public ResponseEntity<ApiResult<Void>> saveStudyLog(@Valid @RequestBody LogRequest request, Authentication authentication) {
+        Long userId = (Long) authentication.getPrincipal();
         kitService.saveStudyLog(request, userId);
         ApiResult<Void> apiResult = ApiResult.success(200, "학습 기록이 저장되었습니다.", null);
         return ResponseEntity.ok(apiResult);

@@ -31,4 +31,18 @@ public class FilesExceptions {
             super("파일 크기가 제한을 초과했습니다. 최대: " + maxSize + " bytes", "FILE_SIZE_EXCEEDED");
         }
     }
+    
+    public static class S3DeleteFailed extends BaseException {
+        
+        public S3DeleteFailed(String fileKey) {
+            super("S3 파일 삭제 실패: " + fileKey, "S3_DELETE_FAILED");
+        }
+    }
+    
+    public static class S3FileNotFound extends BaseException {
+        
+        public S3FileNotFound(String fileKey) {
+            super("S3에 파일이 존재하지 않습니다: " + fileKey, "S3_FILE_NOT_FOUND");
+        }
+    }
 }
