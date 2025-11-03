@@ -1,0 +1,11 @@
+spring:
+  config:
+    activate:
+      on-profile: heygen
+
+heygen:
+  api:
+    base-url: https://api.heygen.com
+    key: ${HEYGEN_API_KEY}
+    version: v1
+

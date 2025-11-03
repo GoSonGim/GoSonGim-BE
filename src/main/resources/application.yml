@@ -5,6 +5,8 @@ spring:
       - auth
       - s3
       - azure
+      - heygen
+      #- openai
       #- redis
 
   config:
