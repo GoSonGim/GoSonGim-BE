@@ -48,7 +48,11 @@ public class GlobalExceptionHandler {
         UserExceptions.UserNotDeletedException.class,
         
         // Situation 도메인 예외
-        SituationExceptions.SituationNotFoundException.class
+        SituationExceptions.SituationNotFoundException.class,
+        SituationExceptions.SessionNotFoundException.class,
+        SituationExceptions.SessionAccessDeniedException.class,
+        SituationExceptions.SessionNotActiveException.class,
+        SituationExceptions.SessionInvalidException.class
     })
     public ResponseEntity<ApiErrorResponse> handleDomainExceptions(BaseException e) {
         HttpStatus status = determineStatus(e);
@@ -152,8 +156,15 @@ public class GlobalExceptionHandler {
         }
         
         // Situation 도메인 예외
-        if (e instanceof SituationExceptions.SituationNotFoundException) {
+        if (e instanceof SituationExceptions.SituationNotFoundException ||
+            e instanceof SituationExceptions.SessionNotFoundException) {
             return HttpStatus.NOT_FOUND;
+        }
+        if (e instanceof SituationExceptions.SessionAccessDeniedException) {
+            return HttpStatus.FORBIDDEN;
+        }
+        if (e instanceof SituationExceptions.SessionNotActiveException) {
+            return HttpStatus.BAD_REQUEST;
         }
         
         return HttpStatus.BAD_REQUEST;
