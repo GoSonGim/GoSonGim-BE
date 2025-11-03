@@ -35,8 +35,7 @@ public class SecurityConfig {
             // Swagger 관련 경로
             "/swagger-ui/**",
             "/swagger-ui.html",
-            "/v3/api-docs/**",
-            "/api-docs/**"
+            "/v3/api-docs/**"
     };
 
     @Bean
