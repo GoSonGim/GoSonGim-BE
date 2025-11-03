@@ -45,4 +45,12 @@ public class S3Controller {
         ApiResponse<S3PresignedUrlResponse> apiResponse = ApiResponse.success(200, "다운로드 URL이 생성되었습니다.", response);
         return ResponseEntity.ok(apiResponse);
     }
+
+    // 파일 삭제
+    @DeleteMapping
+    public ResponseEntity<ApiResponse<String>> deleteFile(@RequestParam String fileKey) {
+        s3Service.deleteFile(fileKey);
+        ApiResponse<String> apiResponse = ApiResponse.success(200, "파일이 성공적으로 삭제되었습니다.", fileKey);
+        return ResponseEntity.ok(apiResponse);
+    }
 }
