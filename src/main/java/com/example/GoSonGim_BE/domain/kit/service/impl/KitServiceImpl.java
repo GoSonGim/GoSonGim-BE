@@ -23,6 +23,7 @@ import com.example.GoSonGim_BE.domain.kit.service.KitService;
 import com.example.GoSonGim_BE.domain.kit.service.PronunciationAssessmentService;
 import com.example.GoSonGim_BE.domain.users.entity.User;
 import com.example.GoSonGim_BE.domain.users.repository.UserRepository;
+import com.example.GoSonGim_BE.domain.users.service.UserService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -47,6 +48,7 @@ public class KitServiceImpl implements KitService {
     private final UserRepository userRepository;
     private final S3Service s3Service;
     private final PronunciationAssessmentService pronunciationAssessmentService;
+    private final UserService userService;
 
     @Override
     public KitCategoriesResponse getKitCategories() {
@@ -150,6 +152,11 @@ public class KitServiceImpl implements KitService {
                         .build();
                     
                     kitStageLogRepository.save(log);
+                    
+                    // 학습 성공 시 레벨 업데이트
+                    if (isSuccess) {
+                        userService.updateUserLevel(userId);
+                    }
                     
                     // 개별 결과 추가
                     individualResults.add(new EvaluateResponse.IndividualResult(
@@ -262,6 +269,11 @@ public class KitServiceImpl implements KitService {
             .build();
 
         kitStageLogRepository.save(log);
+        
+        // 학습 성공 시 레벨 업데이트
+        if (request.isSuccess()) {
+            userService.updateUserLevel(userId);
+        }
     }
     
     @Override

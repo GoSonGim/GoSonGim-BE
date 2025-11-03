@@ -49,7 +49,8 @@ public class SecurityConfig {
             .securityMatcher(PUBLIC_ENDPOINTS)
             .csrf(csrf -> csrf.disable())
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-            .authorizeHttpRequests(authz -> authz.anyRequest().permitAll());
+            .authorizeHttpRequests(authz -> authz.anyRequest()
+                    .permitAll());
         return http.build();
     }
 

@@ -154,5 +154,31 @@ public class User extends BaseEntity {
     public boolean isActive() {
         return !isDeleted();
     }
+    
+    /**
+     * 닉네임 변경
+     * 
+     * @param nickname 새로운 닉네임
+     */
+    public void updateNickname(String nickname) {
+        this.nickname = nickname;
+    }
+    
+    /**
+     * 레벨 계산 및 업데이트
+     * 성공한 고유 키트 2개당 1레벨 업
+     * 
+     * @param uniqueSuccessfulKits 성공한 고유 키트 수
+     */
+    public void calculateAndUpdateLevel(long uniqueSuccessfulKits) {
+        int levelIndex = (int) (uniqueSuccessfulKits / 2);
+        
+        UserLevel[] levels = UserLevel.values();
+        if (levelIndex >= levels.length) {
+            levelIndex = levels.length - 1;
+        }
+        
+        this.level = levels[levelIndex];
+    }
 }
 
