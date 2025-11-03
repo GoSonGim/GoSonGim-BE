@@ -8,6 +8,9 @@ import org.springframework.stereotype.Service;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 import software.amazon.awssdk.services.s3.model.GetObjectRequest;
+import software.amazon.awssdk.services.s3.model.DeleteObjectRequest;
+import software.amazon.awssdk.services.s3.model.HeadObjectRequest;
+import software.amazon.awssdk.services.s3.model.NoSuchKeyException;
 import software.amazon.awssdk.services.s3.presigner.S3Presigner;
 import software.amazon.awssdk.services.s3.presigner.model.GetObjectPresignRequest;
 import software.amazon.awssdk.services.s3.presigner.model.PresignedGetObjectRequest;
@@ -80,6 +83,48 @@ public class S3Service {
         } catch (Exception e) {
             log.error("Failed to download file: {} - Error: {}", fileKey, e.getMessage(), e);
             throw new FilesExceptions.S3DownloadFailed(fileKey);
+        }
+    }
+
+    // S3에서 파일 삭제
+    public void deleteFile(String fileKey) {
+        log.info("Attempting to delete file from S3: {}", fileKey);
+        
+        // 파일 존재 여부 확인
+        if (!isFileExists(fileKey)) {
+            log.warn("File does not exist in S3: {}", fileKey);
+            throw new FilesExceptions.S3FileNotFound(fileKey);
+        }
+        
+        try {
+            DeleteObjectRequest deleteRequest = DeleteObjectRequest.builder()
+                    .bucket(bucketName)
+                    .key(fileKey)
+                    .build();
+            
+            s3Client.deleteObject(deleteRequest);
+            log.info("Successfully deleted file from S3: {}", fileKey);
+        } catch (Exception e) {
+            log.error("Failed to delete file from S3: {} - Error: {}", fileKey, e.getMessage(), e);
+            throw new FilesExceptions.S3DeleteFailed(fileKey);
+        }
+    }
+
+    // 파일 존재 여부 확인
+    private boolean isFileExists(String fileKey) {
+        try {
+            HeadObjectRequest headRequest = HeadObjectRequest.builder()
+                    .bucket(bucketName)
+                    .key(fileKey)
+                    .build();
+            
+            s3Client.headObject(headRequest);
+            return true;
+        } catch (NoSuchKeyException e) {
+            return false;
+        } catch (Exception e) {
+            log.error("Error checking file existence: {} - Error: {}", fileKey, e.getMessage(), e);
+            return false;
         }
     }
 }
