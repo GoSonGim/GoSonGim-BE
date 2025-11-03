@@ -22,8 +22,6 @@ import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
-
-
 @Tag(name = "Kit API")
 @RestController
 @RequestMapping(ApiVersion.CURRENT + "/kits")
@@ -32,9 +30,6 @@ public class KitController {
     
     private final KitService kitService;
 
-    /**
-     * 조음 키트 카테고리 목록 조회
-     */
     @Operation(summary = "조음 키트 카테고리 목록 조회")
     @GetMapping("/category")
     public ResponseEntity<ApiResult<KitCategoriesResponse>> getKitCategories() {
@@ -42,10 +37,7 @@ public class KitController {
         ApiResult<KitCategoriesResponse> apiResult = ApiResult.success(200, "조음 키트 카테고리 목록 조회 성공", response);
         return ResponseEntity.ok(apiResult);
     }
-    
-    /**
-     * 카테고리별 조음 키트 목록 조회
-     */
+
     @Operation(summary = "카테고리별 조음 키트 목록 조회")
     @GetMapping("/category/{categoryId}")
     public ResponseEntity<ApiResult<KitsResponse>> getKitsByCategoryId(@PathVariable Long categoryId) {
@@ -54,9 +46,6 @@ public class KitController {
         return ResponseEntity.ok(apiResult);
     }
 
-    /**
-     * 조음 키트 스테이지 조회
-     */
     @Operation(summary = "조음 키트 스테이지 조회")
     @GetMapping("/{kitId}/stages")
     public ResponseEntity<ApiResult<KitStagesResponse>> getKitStages(@PathVariable Long kitId) {
@@ -64,12 +53,12 @@ public class KitController {
         ApiResult<KitStagesResponse> apiResult = ApiResult.success(200, "조음 키트 상세 조회 성공", response);
         return ResponseEntity.ok(apiResult);
     }
-    
+
     /**
      * 조음 키트 단어 발음 평가
      * Azure Speech Service를 통해 발음을 평가하고 결과를 저장
      */
-    @Operation(summary = "조음 키트 단어 발음 평가")
+    @Operation(summary = "조음 키트 단어 발음 평가 및 학습 기록 저장")
     @PostMapping("/stages/evaluate")
     public ResponseEntity<ApiResult<EvaluateResponse>> evaluatePronunciation(@Valid @RequestBody List<EvaluateRequest> evaluations, Authentication authentication) {
         Long userId = (Long) authentication.getPrincipal();
@@ -82,7 +71,7 @@ public class KitController {
      * 조음 키트 단어 외 학습 기록 저장
      * 발음 평가 없이 직접 학습 기록을 저장
      */
-    @Operation(summary = "조음 키트 학습 기록 저장")
+    @Operation(summary = "조음 키트 단어 외 학습 기록 저장")
     @PostMapping("/stages/log")
     public ResponseEntity<ApiResult<Void>> saveStudyLog(@Valid @RequestBody LogRequest request, Authentication authentication) {
         Long userId = (Long) authentication.getPrincipal();

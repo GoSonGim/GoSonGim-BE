@@ -25,7 +25,7 @@ public class BookmarkController {
     
     private final BookmarkService bookmarkService;
     
-    @Operation(summary = "키트 북마크 추가")
+    @Operation(summary = "내 학습(북마크) 추가 – 조음발음")
     @PostMapping("/kit")
     public ResponseEntity<ApiResult<Void>> addKitBookmarks(
             Authentication authentication,
@@ -37,7 +37,7 @@ public class BookmarkController {
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
     
-    @Operation(summary = "상황극 북마크 추가")
+    @Operation(summary = "내 학습(북마크) 추가 – 상황극")
     @PostMapping("/situation")
     public ResponseEntity<ApiResult<Void>> addSituationBookmarks(
             Authentication authentication,
@@ -49,7 +49,7 @@ public class BookmarkController {
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
     
-    @Operation(summary = "북마크 삭제")
+    @Operation(summary = "내 학습(북마크) 삭제")
     @DeleteMapping("/{bookmarkId}")
     public ResponseEntity<ApiResult<Void>> deleteBookmark(
             Authentication authentication,
@@ -61,7 +61,7 @@ public class BookmarkController {
         return ResponseEntity.ok(response);
     }
     
-    @Operation(summary = "북마크 목록 조회")
+    @Operation(summary = "내 학습(북마크) 조회")
     @GetMapping
     public ResponseEntity<ApiResult<BookmarkListResponse>> getBookmarks(
             Authentication authentication,
@@ -75,7 +75,7 @@ public class BookmarkController {
         return ResponseEntity.ok(response);
     }
     
-    @Operation(summary = "북마크 미리보기 조회")
+    @Operation(summary = "내 학습 최신순 10개 조회")
     @GetMapping("/preview")
     public ResponseEntity<ApiResult<BookmarkPreviewListResponse>> getBookmarkPreview(
             Authentication authentication,

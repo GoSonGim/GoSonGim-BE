@@ -22,10 +22,9 @@ public class S3Controller {
 
     private final S3Service s3Service;
 
-    // 업로드용 Presigned URL 발급
-    @Operation(summary = "업로드 URL 생성")
+    @Operation(summary = "Presigned URL 발급")
     @PostMapping("/upload-url")
-    public ResponseEntity<ApiResponse<S3PresignedUrlResponse>> generateUploadUrl(@RequestParam String folder,
+    public ResponseEntity<ApiResult<S3PresignedUrlResponse>> generateUploadUrl(@RequestParam String folder,
                                                  @RequestParam String fileName) {
 
         // fileKey 생성 규칙 통일
@@ -40,8 +39,7 @@ public class S3Controller {
         return ResponseEntity.ok(apiResult);
     }
 
-    // 다운로드용 Presigned URL 발급
-    @Operation(summary = "다운로드 URL 생성")
+    @Operation(summary = "다운로드 URL 발급")
     @GetMapping("/download-url")
     public ResponseEntity<ApiResult<S3PresignedUrlResponse>> generateDownloadUrl(@RequestParam String fileKey) {
         URL downloadUrl = s3Service.generateDownloadPresignedUrl(fileKey, 60); //1시간 유효
@@ -50,11 +48,11 @@ public class S3Controller {
         return ResponseEntity.ok(apiResult);
     }
 
-    // 파일 삭제
+    @Operation(summary = "S3 파일 삭제")
     @DeleteMapping
-    public ResponseEntity<ApiResponse<String>> deleteFile(@RequestParam String fileKey) {
+    public ResponseEntity<ApiResult<String>> deleteFile(@RequestParam String fileKey) {
         s3Service.deleteFile(fileKey);
-        ApiResponse<String> apiResponse = ApiResponse.success(200, "파일이 성공적으로 삭제되었습니다.", fileKey);
-        return ResponseEntity.ok(apiResponse);
+        ApiResult<String> response = ApiResult.success(200, "파일이 성공적으로 삭제되었습니다.", fileKey);
+        return ResponseEntity.ok(response);
     }
 }
