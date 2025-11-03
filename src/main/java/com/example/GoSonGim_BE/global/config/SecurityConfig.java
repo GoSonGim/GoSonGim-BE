@@ -28,7 +28,6 @@ public class SecurityConfig {
     private static final String[] PUBLIC_ENDPOINTS = new String[] {
             ApiVersion.CURRENT + "/auth/**",
             ApiVersion.CURRENT + "/files/**",
-            ApiVersion.CURRENT + "/kits/**",
             ApiVersion.CURRENT + "/health",
             ApiVersion.CURRENT + "/ready",
             ApiVersion.CURRENT + "/live",

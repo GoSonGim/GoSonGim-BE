@@ -16,6 +16,7 @@ import lombok.RequiredArgsConstructor;
 
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -63,8 +64,8 @@ public class KitController {
      * Azure Speech Service를 통해 발음을 평가하고 결과를 저장
      */
     @PostMapping("/stages/evaluate")
-    public ResponseEntity<ApiResponse<EvaluateResponse>> evaluatePronunciation(@Valid @RequestBody List<EvaluateRequest> evaluations) {
-        Long userId = 1L;
+    public ResponseEntity<ApiResponse<EvaluateResponse>> evaluatePronunciation(@Valid @RequestBody List<EvaluateRequest> evaluations, Authentication authentication) {
+        Long userId = (Long) authentication.getPrincipal();
         EvaluateResponse response = kitService.evaluatePronunciation(evaluations, userId);
         ApiResponse<EvaluateResponse> apiResponse = ApiResponse.success(200, "발음 평가가 완료되었습니다.", response);
         return ResponseEntity.ok(apiResponse);
@@ -75,8 +76,8 @@ public class KitController {
      * 발음 평가 없이 직접 학습 기록을 저장
      */
     @PostMapping("/stages/log")
-    public ResponseEntity<ApiResponse<Void>> saveStudyLog(@Valid @RequestBody LogRequest request) {
-        Long userId = 1L;
+    public ResponseEntity<ApiResponse<Void>> saveStudyLog(@Valid @RequestBody LogRequest request, Authentication authentication) {
+        Long userId = (Long) authentication.getPrincipal();
         kitService.saveStudyLog(request, userId);
         ApiResponse<Void> apiResponse = ApiResponse.success(200, "학습 기록이 저장되었습니다.", null);
         return ResponseEntity.ok(apiResponse);
