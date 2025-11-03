@@ -86,7 +86,7 @@ public interface KitStageLogRepository extends JpaRepository<KitStageLog, Long> 
      * @return 날짜별 그룹핑된 결과
      */
     @Query("SELECT DATE(ksl.createdAt) as date, " +
-           "COUNT(ksl.id) as wordCount, " +
+           "COUNT(DISTINCT ksl.targetWord) as wordCount, " +
            "GROUP_CONCAT(DISTINCT ksl.targetWord) as words " +
            "FROM KitStageLog ksl " +
            "WHERE ksl.user.id = :userId " +

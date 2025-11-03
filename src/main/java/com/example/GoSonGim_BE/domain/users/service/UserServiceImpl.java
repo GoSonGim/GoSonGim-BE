@@ -3,6 +3,7 @@ package com.example.GoSonGim_BE.domain.users.service;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.example.GoSonGim_BE.domain.auth.repository.RefreshTokenRepository;
 import com.example.GoSonGim_BE.domain.kit.repository.KitStageLogRepository;
 import com.example.GoSonGim_BE.domain.situation.repository.SituationLogRepository;
 import com.example.GoSonGim_BE.domain.users.dto.response.DailyWordsResponse;
@@ -35,6 +36,7 @@ public class UserServiceImpl implements UserService {
     private final UserRepository userRepository;
     private final KitStageLogRepository kitStageLogRepository;
     private final SituationLogRepository situationLogRepository;
+    private final RefreshTokenRepository refreshTokenRepository;
     
     @Override
     public User createDefaultUser() {
@@ -67,6 +69,10 @@ public class UserServiceImpl implements UserService {
         User user = userRepository.findById(userId)
             .orElseThrow(() -> new UserExceptions.UserNotFoundException(userId));
         
+        // 리프레시 토큰 삭제
+        refreshTokenRepository.deleteByUserId(userId);
+        
+        // 사용자 소프트 삭제
         user.delete();
         userRepository.save(user);
         
@@ -125,7 +131,8 @@ public class UserServiceImpl implements UserService {
         // 날짜별 카운트를 Map으로 변환
         Map<LocalDate, Integer> dailyCountMap = new HashMap<>();
         for (Object[] result : dailyResults) {
-            LocalDate date = (LocalDate) result[0];
+            java.sql.Date sqlDate = (java.sql.Date) result[0];
+            LocalDate date = sqlDate.toLocalDate();
             Long count = (Long) result[1];
             dailyCountMap.put(date, count.intValue());
         }
@@ -163,9 +170,11 @@ public class UserServiceImpl implements UserService {
         // 결과를 DTO로 변환
         List<DailyWordsResponse.DailyWordItem> items = new ArrayList<>();
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy.M.d");
+        int totalWordCount = 0;
         
         for (Object[] result : results) {
-            LocalDate date = (LocalDate) result[0];
+            java.sql.Date sqlDate = (java.sql.Date) result[0];
+            LocalDate date = sqlDate.toLocalDate();
             Long wordCount = (Long) result[1];
             String wordsString = (String) result[2];
             
@@ -179,12 +188,15 @@ public class UserServiceImpl implements UserService {
                 wordCount.intValue(),
                 words
             ));
+            
+            // 총 단어 수 누적
+            totalWordCount += wordCount.intValue();
         }
         
         // 다음 페이지 존재 여부 확인
         Long totalDays = kitStageLogRepository.countDistinctDaysByUserId(userId);
         boolean hasNext = (long) (pageNumber + 1) * pageSize < totalDays;
         
-        return DailyWordsResponse.of(items, page, pageSize, hasNext);
+        return DailyWordsResponse.of(items, totalWordCount, page, pageSize, hasNext);
     }
 }

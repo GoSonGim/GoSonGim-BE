@@ -3,8 +3,9 @@ package com.example.GoSonGim_BE.domain.users.dto.response;
 import java.util.List;
 
 public record DailyWordsResponse(
-    List<DailyWordItem> items,
-    PageInfo pageInfo
+        Integer totalWordCount,  // 모든 날짜의 wordCount 합계
+        List<DailyWordItem> items,
+        PageInfo pageInfo
 ) {
     public record DailyWordItem(
         String date,        // "YYYY.M.D" 형식
@@ -18,10 +19,11 @@ public record DailyWordsResponse(
         Boolean hasNext
     ) {}
     
-    public static DailyWordsResponse of(List<DailyWordItem> items, int page, int size, boolean hasNext) {
+    public static DailyWordsResponse of(List<DailyWordItem> items, int totalWordCount, int page, int size, boolean hasNext) {
         return new DailyWordsResponse(
-            items,
-            new PageInfo(page, size, hasNext)
+                totalWordCount,
+                items,
+                new PageInfo(page, size, hasNext)
         );
     }
 }
