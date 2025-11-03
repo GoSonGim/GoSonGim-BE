@@ -5,9 +5,8 @@ spring:
       - auth
       - s3
       - azure
-      - heygen
-      #- openai
-      #- redis
+      - redis
+      #- openai  # TODO: 대화 생성 API 구현 시 활성화
 
   config:
     import: optional:file:.env[.properties]
