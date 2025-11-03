@@ -85,6 +85,32 @@ public class GlobalExceptionHandler {
     }
     
     /**
+     * 모든 예외에 대한 Fallback 처리
+     * 예상치 못한 예외가 발생했을 때 적절한 응답 반환
+     */
+    @ExceptionHandler(Exception.class)
+    public ResponseEntity<ApiErrorResponse> handleException(Exception e) {
+        log.error("Unexpected exception occurred", e);
+        
+        // DB 관련 예외
+        if (e.getClass().getName().contains("SQLException") || 
+            e.getClass().getName().contains("DataAccess")) {
+            return ExceptionResponseUtil.createErrorResponse(
+                "데이터베이스 오류가 발생했습니다.",
+                "DATABASE_ERROR",
+                HttpStatus.INTERNAL_SERVER_ERROR
+            );
+        }
+        
+        // 기타 예외
+        return ExceptionResponseUtil.createErrorResponse(
+            e.getMessage() != null ? e.getMessage() : "서버 오류가 발생했습니다.",
+            "INTERNAL_SERVER_ERROR",
+            HttpStatus.INTERNAL_SERVER_ERROR
+        );
+    }
+    
+    /**
      * 예외 타입에 따른 HTTP 상태 코드 결정
      */
     private HttpStatus determineStatus(BaseException e) {

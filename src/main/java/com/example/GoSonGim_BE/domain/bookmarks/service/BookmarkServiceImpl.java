@@ -136,12 +136,12 @@ public class BookmarkServiceImpl implements BookmarkService {
             
             for (Bookmark bookmark : bookmarks) {
                 Situation situation = situationMap.get(bookmark.getTargetId());
-                if (situation != null && (category == null || situation.getSituationCategory().equals(category))) {
+                if (situation != null && (category == null || situation.getSituationCategory().name().equals(category))) {
                     bookmarkResponses.add(new BookmarkResponse(
                         bookmark.getId(),
                         situation.getId(),
                         situation.getSituationName(),
-                        situation.getSituationCategory(),
+                        situation.getSituationCategory().name(),
                         bookmark.getCreatedAt()
                     ));
                 }
@@ -177,7 +177,7 @@ public class BookmarkServiceImpl implements BookmarkService {
                 Situation situation = situationRepository.findById(bookmark.getTargetId()).orElse(null);
                 if (situation != null) {
                     title = situation.getSituationName();
-                    category = situation.getSituationCategory();
+                    category = situation.getSituationCategory().name();
                 }
             }
             
