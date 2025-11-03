@@ -25,3 +25,13 @@ logging:
   level:
     com.example.GoSonGim_BE: DEBUG
     org.springframework.security: DEBUG
+
+springdoc:
+  swagger-ui:
+    enabled: true
+    path: /swagger-ui
+  api-docs:
+    enabled: true
+    path: /v3/api-docs
+  default-consumes-media-type: application/json
+  default-produces-media-type: application/json
