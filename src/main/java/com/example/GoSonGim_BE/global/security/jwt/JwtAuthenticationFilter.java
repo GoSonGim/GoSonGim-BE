@@ -39,6 +39,12 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
             // 3. User 조회
             User user = userService.findById(userId);
+            
+            // 3-1. 탈퇴한 사용자 체크
+            if (user.isDeleted()) {
+                response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Account has been deactivated");
+                return;
+            }
 
             // 4. Authentication 객체 생성
             UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
