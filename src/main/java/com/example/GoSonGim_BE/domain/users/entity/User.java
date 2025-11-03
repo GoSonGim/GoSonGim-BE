@@ -171,14 +171,25 @@ public class User extends BaseEntity {
      * @param uniqueSuccessfulKits 성공한 고유 키트 수
      */
     public void calculateAndUpdateLevel(long uniqueSuccessfulKits) {
-        int levelIndex = (int) (uniqueSuccessfulKits / 2);
-        
-        UserLevel[] levels = UserLevel.values();
-        if (levelIndex >= levels.length) {
-            levelIndex = levels.length - 1;
+        if (uniqueSuccessfulKits >= 16) {
+            this.level = UserLevel.ADVANCED_3;
+        } else if (uniqueSuccessfulKits >= 14) {
+            this.level = UserLevel.ADVANCED_2;
+        } else if (uniqueSuccessfulKits >= 12) {
+            this.level = UserLevel.ADVANCED_1;
+        } else if (uniqueSuccessfulKits >= 10) {
+            this.level = UserLevel.INTERMEDIATE_3;
+        } else if (uniqueSuccessfulKits >= 8) {
+            this.level = UserLevel.INTERMEDIATE_2;
+        } else if (uniqueSuccessfulKits >= 6) {
+            this.level = UserLevel.INTERMEDIATE_1;
+        } else if (uniqueSuccessfulKits >= 4) {
+            this.level = UserLevel.BEGINNER_3;
+        } else if (uniqueSuccessfulKits >= 2) {
+            this.level = UserLevel.BEGINNER_2;
+        } else {
+            this.level = UserLevel.BEGINNER_1;
         }
-        
-        this.level = levels[levelIndex];
     }
 }
 
