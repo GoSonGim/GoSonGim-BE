@@ -1,16 +1,21 @@
 package com.example.GoSonGim_BE.domain.situation.service;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.example.GoSonGim_BE.domain.situation.dto.request.SituationCreateRequest;
+import com.example.GoSonGim_BE.domain.situation.dto.request.SituationSessionReplyRequest;
 import com.example.GoSonGim_BE.domain.situation.dto.request.SituationSessionStartRequest;
 import com.example.GoSonGim_BE.domain.situation.dto.response.SituationCreateResponse;
 import com.example.GoSonGim_BE.domain.situation.dto.response.SituationDetailResponse;
 import com.example.GoSonGim_BE.domain.situation.dto.response.SituationListResponse;
+import com.example.GoSonGim_BE.domain.situation.dto.response.SituationSessionReplyResponse;
 import com.example.GoSonGim_BE.domain.situation.dto.response.SituationSessionStartResponse;
 import com.example.GoSonGim_BE.domain.situation.entity.Situation;
 import com.example.GoSonGim_BE.domain.situation.entity.SituationCategory;
@@ -18,6 +23,8 @@ import com.example.GoSonGim_BE.domain.situation.entity.SituationSession;
 import com.example.GoSonGim_BE.domain.situation.exception.SituationExceptions;
 import com.example.GoSonGim_BE.domain.situation.repository.SessionStorage;
 import com.example.GoSonGim_BE.domain.situation.repository.SituationRepository;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -30,6 +37,7 @@ public class SituationServiceImpl implements SituationService {
 
     private final SituationRepository situationRepository;
     private final SessionStorage sessionStorage;
+    private final ObjectMapper objectMapper;
 
     @Override
     @Transactional
@@ -54,19 +62,11 @@ public class SituationServiceImpl implements SituationService {
 
     @Override
     public SituationListResponse getSituationsByCategory(String category) {
-        log.debug("Received category parameter: {}", category);
         SituationCategory situationCategory = SituationCategory.from(category);
-        log.debug("Converted to enum: {}", situationCategory);
         
-        List<Situation> situations;
-        if (situationCategory.isAll()) {
-            log.debug("Fetching all situations");
-            situations = situationRepository.findAll();
-        } else {
-            log.debug("Fetching situations for category: {}", situationCategory);
-            situations = situationRepository.findBySituationCategory(situationCategory);
-            log.debug("Found {} situations", situations.size());
-        }
+        List<Situation> situations = situationCategory.isAll()
+            ? situationRepository.findAll()
+            : situationRepository.findBySituationCategory(situationCategory);
         
         List<SituationListResponse.SituationItem> items = situations.stream()
             .map(situation -> new SituationListResponse.SituationItem(
@@ -93,54 +93,213 @@ public class SituationServiceImpl implements SituationService {
     
     @Override
     public SituationSessionStartResponse startSession(Long userId, SituationSessionStartRequest request) {
-        log.info("Starting situation session - userId: {}, situationId: {}", userId, request.situationId());
-        
-        // 1. 상황극 조회 (description 포함)
         Situation situation = situationRepository.findById(request.situationId())
             .orElseThrow(() -> new SituationExceptions.SituationNotFoundException(request.situationId()));
         
-        // 2. 세션 ID 생성 (user_{userId}_sit_{situationId}_{timestamp})
         String sessionId = String.format("user%d_sit%d_%d", 
             userId, request.situationId(), System.currentTimeMillis());
         
-        // 3. 첫 질문 생성 (DB의 description 사용)
         String firstQuestion = generateFirstQuestion(situation);
         
-        // 4. 세션 정보 저장 (HeyGen 정보는 프론트엔드가 직접 관리)
+        List<Map<String, Object>> initialHistory = new ArrayList<>();
+        Map<String, Object> firstTurn = new HashMap<>();
+        firstTurn.put("turnIndex", 1);
+        firstTurn.put("question", firstQuestion);
+        firstTurn.put("answer", null);
+        firstTurn.put("evaluation", null);
+        initialHistory.add(firstTurn);
+        
+        LocalDateTime now = LocalDateTime.now();
         SituationSession session = SituationSession.builder()
             .sessionId(sessionId)
             .userId(userId)
             .situationId(request.situationId())
-            .heygenSessionId(null)  // 프론트엔드가 SDK로 생성
+            .heygenSessionId(null)
             .heygenAccessToken(null)
             .heygenUrl(null)
             .currentStep(1)
-            .conversationHistory("[]")  // 빈 JSON 배열
-            .createdAt(LocalDateTime.now())
-            .expiresAt(LocalDateTime.now().plusMinutes(30))  // 30분 후 만료
+            .conversationHistory(serializeConversationHistoryWithEvaluation(initialHistory))
+            .createdAt(now)
+            .expiresAt(now.plusMinutes(30))
             .status(SituationSession.SessionStatus.ACTIVE)
             .build();
         
         sessionStorage.save(session);
-        log.info("Session saved in Redis: {}", sessionId);
         
-        // 5. 응답 생성 (프론트엔드가 SDK로 HeyGen 직접 연결)
-        return new SituationSessionStartResponse(
-            sessionId,
-            firstQuestion
-        );
+        return new SituationSessionStartResponse(sessionId, firstQuestion);
     }
     
-    /**
-     * 첫 번째 질문 생성
-     */
+    @Override
+    public SituationSessionReplyResponse reply(Long userId, SituationSessionReplyRequest request) {
+        SituationSession session = sessionStorage.findById(request.sessionId())
+            .orElseThrow(() -> new SituationExceptions.SessionNotFoundException(request.sessionId()));
+        
+        if (!session.getUserId().equals(userId)) {
+            throw new SituationExceptions.SessionAccessDeniedException(request.sessionId());
+        }
+        
+        if (session.getStatus() != SituationSession.SessionStatus.ACTIVE) {
+            throw new SituationExceptions.SessionNotActiveException(request.sessionId(), session.getStatus());
+        }
+        
+        Situation situation = situationRepository.findById(session.getSituationId())
+            .orElseThrow(() -> new SituationExceptions.SituationNotFoundException(session.getSituationId()));
+        
+        List<Map<String, Object>> conversationHistory = parseConversationHistoryWithEvaluation(
+            session.getConversationHistory());
+        
+        if (conversationHistory.isEmpty()) {
+            throw new SituationExceptions.SessionInvalidException(
+                "대화 내역이 비어있습니다. 세션을 다시 시작해주세요.");
+        }
+        
+        Map<String, Object> currentTurn = conversationHistory.get(conversationHistory.size() - 1);
+        String currentQuestion = (String) currentTurn.get("question");
+        
+        if (currentQuestion == null || currentQuestion.isBlank()) {
+            throw new SituationExceptions.SessionInvalidException("현재 질문을 찾을 수 없습니다.");
+        }
+        
+        SituationSessionReplyResponse.Evaluation evaluation = evaluateAnswer(
+            situation, currentQuestion, request.answer(), session.getCurrentStep());
+        
+        Map<String, Object> evaluationMap = new HashMap<>();
+        evaluationMap.put("isSuccess", evaluation.isSuccess());
+        evaluationMap.put("score", evaluation.score());
+        evaluationMap.put("feedback", evaluation.feedback());
+        
+        Map<String, Object> updatedTurn = new HashMap<>();
+        updatedTurn.put("turnIndex", session.getCurrentStep());
+        updatedTurn.put("question", currentQuestion);
+        updatedTurn.put("answer", request.answer());
+        updatedTurn.put("evaluation", evaluationMap);
+        conversationHistory.set(conversationHistory.size() - 1, updatedTurn);
+        
+        int nextTurnIndex = session.getCurrentStep() + 1;
+        boolean shouldEnd = !evaluation.isSuccess() || nextTurnIndex > 5;
+        
+        String nextQuestion = null;
+        SituationSessionReplyResponse.FinalSummary finalSummary = null;
+        SituationSession.SessionStatus nextStatus = shouldEnd 
+            ? SituationSession.SessionStatus.COMPLETED 
+            : session.getStatus();
+        
+        if (shouldEnd) {
+            finalSummary = generateFinalSummary(conversationHistory, evaluation.isSuccess());
+        } else {
+            nextQuestion = generateNextQuestion(situation, conversationHistory, nextTurnIndex);
+            Map<String, Object> nextTurn = new HashMap<>();
+            nextTurn.put("turnIndex", nextTurnIndex);
+            nextTurn.put("question", nextQuestion);
+            nextTurn.put("answer", null);
+            nextTurn.put("evaluation", null);
+            conversationHistory.add(nextTurn);
+        }
+        
+        SituationSession updatedSession = SituationSession.builder()
+            .sessionId(session.getSessionId())
+            .userId(session.getUserId())
+            .situationId(session.getSituationId())
+            .heygenSessionId(session.getHeygenSessionId())
+            .heygenAccessToken(session.getHeygenAccessToken())
+            .heygenUrl(session.getHeygenUrl())
+            .currentStep(nextTurnIndex)
+            .conversationHistory(serializeConversationHistoryWithEvaluation(conversationHistory))
+            .createdAt(session.getCreatedAt())
+            .expiresAt(session.getExpiresAt())
+            .status(nextStatus)
+            .build();
+        
+        sessionStorage.save(updatedSession);
+        
+        return new SituationSessionReplyResponse(
+            evaluation, nextQuestion, nextTurnIndex, shouldEnd, finalSummary);
+    }
+    
     private String generateFirstQuestion(Situation situation) {
-        // TODO: OpenAI API 연동 시 GPT-4를 사용한 동적 질문 생성
-        // 상황극 설명(description)을 컨텍스트로 사용
-        // 현재는 고정된 템플릿 사용
         String description = situation.getDescription() != null ? situation.getDescription() : "";
         return String.format("%s\n\n%s에 오신 것을 환영합니다. 무엇을 도와드릴까요?", 
-            description, 
-            situation.getSituationName());
+            description, situation.getSituationName());
+    }
+    
+    private SituationSessionReplyResponse.Evaluation evaluateAnswer(
+            Situation situation, String question, String answer, Integer turnIndex) {
+        boolean isSuccess = true;
+        float score = 90.0f + (float)(Math.random() * 10);
+        String feedback;
+        
+        if (answer.length() < 3) {
+            isSuccess = false;
+            score = 70.0f;
+            feedback = "답변이 너무 짧아요. 조금 더 자세히 말씀해주시면 좋겠어요.";
+        } else if (answer.contains("아니요") || answer.contains("모르겠")) {
+            isSuccess = false;
+            score = 65.0f;
+            feedback = "답변을 다시 생각해보시면 좋겠어요.";
+        } else {
+            if (turnIndex <= 2) {
+                feedback = "자연스러운 답변이에요!";
+            } else if (turnIndex <= 4) {
+                feedback = "짧지만 자연스러운 응답이에요.";
+            } else {
+                feedback = "훌륭한 답변입니다!";
+            }
+        }
+        
+        return new SituationSessionReplyResponse.Evaluation(isSuccess, feedback, score);
+    }
+    
+    private String generateNextQuestion(Situation situation, List<Map<String, Object>> conversationHistory, int turnIndex) {
+        return switch (turnIndex) {
+            case 2 -> "음료는 어떤 걸로 하시겠어요?";
+            case 3 -> "식사를 다 마치셨나요?";
+            case 4 -> "맛은 어떠셨어요?";
+            case 5 -> "다음에도 또 방문해주세요!";
+            default -> "다음으로 무엇을 도와드릴까요?";
+        };
+    }
+    
+    private SituationSessionReplyResponse.FinalSummary generateFinalSummary(
+            List<Map<String, Object>> conversationHistory, boolean lastEvaluationSuccess) {
+        float totalScore = 0.0f;
+        int count = 0;
+        
+        for (Map<String, Object> turn : conversationHistory) {
+            @SuppressWarnings("unchecked")
+            Map<String, Object> evaluation = (Map<String, Object>) turn.get("evaluation");
+            if (evaluation != null && evaluation.get("score") instanceof Number scoreObj) {
+                totalScore += scoreObj.floatValue();
+                count++;
+            }
+        }
+        
+        float averageScore = count > 0 ? totalScore / count : 0.0f;
+        String finalFeedback = lastEvaluationSuccess
+            ? "전체적으로 주제에 맞는 훌륭한 답변이었어요"
+            : "이번 상황극은 거의 완벽했어요! 다음에는 연습해보면 좋겠어요.";
+        
+        return new SituationSessionReplyResponse.FinalSummary(averageScore, finalFeedback);
+    }
+    
+    private List<Map<String, Object>> parseConversationHistoryWithEvaluation(String historyJson) {
+        try {
+            if (historyJson == null || historyJson.isBlank() || historyJson.equals("[]")) {
+                return new ArrayList<>();
+            }
+            TypeReference<List<Map<String, Object>>> typeRef = new TypeReference<>() {};
+            return objectMapper.readValue(historyJson, typeRef);
+        } catch (Exception e) {
+            log.warn("대화 내역 파싱 실패: {}", historyJson, e);
+            return new ArrayList<>();
+        }
+    }
+    
+    private String serializeConversationHistoryWithEvaluation(List<Map<String, Object>> history) {
+        try {
+            return objectMapper.writeValueAsString(history);
+        } catch (Exception e) {
+            log.error("대화 내역 직렬화 실패", e);
+            return "[]";
+        }
     }
 }
