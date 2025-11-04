@@ -26,7 +26,7 @@ jobs:
 
       # 3. Build Spring Boot JAR
       - name: Build with Gradle
-        run: ./gradlew :api:bootJar
+        run: ./gradlew bootJar
 
       # 4. DockerHub 로그인
       - name: Login to DockerHub
