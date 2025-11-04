@@ -52,6 +52,9 @@ dependencies {
 	//azure-sdk
 	implementation group: 'com.microsoft.cognitiveservices.speech', name: 'client-sdk', version: "1.43.0", ext: "jar"
 
+	// Swagger (SpringDoc OpenAPI)
+	implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.7.0'
+
 }
 
 tasks.named('test') {

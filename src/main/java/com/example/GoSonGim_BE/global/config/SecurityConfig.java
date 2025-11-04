@@ -31,7 +31,11 @@ public class SecurityConfig {
             ApiVersion.CURRENT + "/ready",
             ApiVersion.CURRENT + "/live",
             "/error",  // 에러 핸들러 경로는 인증 불필요
-            "/error/**"
+            "/error/**",
+            // Swagger 관련 경로
+            "/swagger-ui/**",
+            "/swagger-ui.html",
+            "/v3/api-docs/**"
     };
 
     @Bean
