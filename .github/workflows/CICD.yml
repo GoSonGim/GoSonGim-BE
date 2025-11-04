@@ -62,8 +62,11 @@ jobs:
             echo ">>> Pulling latest Docker image"
             sudo docker pull ${{ secrets.DOCKER_USERNAME }}/docker-setup:${{ secrets.DOCKER_TAG || 'latest' }}
 
-            echo ">>> Running docker compose"
-            sudo docker-compose -f docker-compose.prod.yml --env-file .env up -d --force-recreate
+            echo ">>> Cleaning existing containers"
+            sudo docker-compose -f docker-compose.prod.yml down || true
 
+            echo ">>> Running docker compose (detached mode)"
+            nohup sudo docker-compose -f docker-compose.prod.yml --env-file .env up -d --force-recreate > /dev/null 2>&1 &
+            
             echo ">>> Cleaning up old images"
             sudo docker image prune -f
