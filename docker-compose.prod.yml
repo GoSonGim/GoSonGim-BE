@@ -1,0 +1,37 @@
+version: '3.8'
+
+services:
+  # Spring Boot 애플리케이션
+  app:
+    image: ${DOCKER_IMAGE:-gosongim/docker-setup}:${DOCKER_TAG:-latest}
+    container_name: gosongim-app
+    env_file:
+      - .env
+    ports:
+      - "8080:8080"
+    networks:
+      - gosongim-network
+    restart: unless-stopped
+
+  # Nginx
+  nginx:
+    image: nginx:alpine
+    container_name: gosongim-nginx
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/conf.d:/etc/nginx/conf.d:ro
+      - /etc/letsencrypt:/etc/letsencrypt:ro
+      - /var/www/certbot:/var/www/certbot:ro
+    depends_on:
+      - app
+    networks:
+      - gosongim-network
+    restart: unless-stopped
+
+networks:
+  gosongim-network:
+    driver: bridge
+

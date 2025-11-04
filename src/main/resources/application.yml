@@ -2,9 +2,9 @@ spring:
   profiles:
     include:
       - datasource
-      #- auth
-      #- s3
-      #- azure
+      - auth
+      - s3
+      - azure
       #- redis
 
   config:
@@ -13,6 +13,7 @@ spring:
   jackson:
     serialization:
       fail-on-empty-beans: false
+    time-zone: Asia/Seoul
 
 server:
   base-uri: ${SERVER_URI}
@@ -20,3 +21,18 @@ server:
 
 cors:
   allowed-origins: http://localhost:3000
+
+logging:
+  level:
+    com.example.GoSonGim_BE: DEBUG
+    org.springframework.security: DEBUG
+
+springdoc:
+  swagger-ui:
+    enabled: true
+    path: /swagger-ui
+  api-docs:
+    enabled: true
+    path: /v3/api-docs
+  default-consumes-media-type: application/json
+  default-produces-media-type: application/json
