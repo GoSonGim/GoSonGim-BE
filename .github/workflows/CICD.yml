@@ -63,7 +63,7 @@ jobs:
             sudo docker pull ${{ secrets.DOCKER_USERNAME }}/docker-setup:${{ secrets.DOCKER_TAG || 'latest' }}
 
             echo ">>> Running docker compose"
-            sudo docker-compose -f docker-compose-prod.yml --env-file .env up -d --force-recreate
+            sudo docker-compose -f docker-compose.prod.yml --env-file .env up -d --force-recreate
 
             echo ">>> Cleaning up old images"
             sudo docker image prune -f
