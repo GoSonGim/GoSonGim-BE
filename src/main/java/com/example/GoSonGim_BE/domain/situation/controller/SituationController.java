@@ -12,11 +12,13 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.example.GoSonGim_BE.domain.situation.dto.request.SituationCreateRequest;
+import com.example.GoSonGim_BE.domain.situation.dto.request.SituationSessionEndRequest;
 import com.example.GoSonGim_BE.domain.situation.dto.request.SituationSessionReplyRequest;
 import com.example.GoSonGim_BE.domain.situation.dto.request.SituationSessionStartRequest;
 import com.example.GoSonGim_BE.domain.situation.dto.response.SituationCreateResponse;
 import com.example.GoSonGim_BE.domain.situation.dto.response.SituationDetailResponse;
 import com.example.GoSonGim_BE.domain.situation.dto.response.SituationListResponse;
+import com.example.GoSonGim_BE.domain.situation.dto.response.SituationSessionEndResponse;
 import com.example.GoSonGim_BE.domain.situation.dto.response.SituationSessionReplyResponse;
 import com.example.GoSonGim_BE.domain.situation.dto.response.SituationSessionStartResponse;
 import com.example.GoSonGim_BE.domain.situation.service.SituationService;
@@ -71,5 +73,14 @@ public class SituationController {
         Long userId = (Long) authentication.getPrincipal();
         SituationSessionReplyResponse response = situationService.reply(userId, request);
         return ResponseEntity.ok(ApiResponse.success(200, "요청이 성공적으로 처리되었습니다.", response));
+    }
+    
+    @PostMapping("/session/complete")
+    public ResponseEntity<ApiResponse<SituationSessionEndResponse>> endSession(
+            Authentication authentication,
+            @Valid @RequestBody SituationSessionEndRequest request) {
+        Long userId = (Long) authentication.getPrincipal();
+        SituationSessionEndResponse response = situationService.endSession(userId, request);
+        return ResponseEntity.ok(ApiResponse.success(200, "상황극 학습 세션이 종료되었습니다.", response));
     }
 }

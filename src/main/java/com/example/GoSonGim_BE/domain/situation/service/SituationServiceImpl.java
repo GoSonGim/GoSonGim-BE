@@ -10,19 +10,25 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.example.GoSonGim_BE.domain.situation.dto.request.SituationCreateRequest;
+import com.example.GoSonGim_BE.domain.situation.dto.request.SituationSessionEndRequest;
 import com.example.GoSonGim_BE.domain.situation.dto.request.SituationSessionReplyRequest;
 import com.example.GoSonGim_BE.domain.situation.dto.request.SituationSessionStartRequest;
 import com.example.GoSonGim_BE.domain.situation.dto.response.SituationCreateResponse;
 import com.example.GoSonGim_BE.domain.situation.dto.response.SituationDetailResponse;
 import com.example.GoSonGim_BE.domain.situation.dto.response.SituationListResponse;
+import com.example.GoSonGim_BE.domain.situation.dto.response.SituationSessionEndResponse;
 import com.example.GoSonGim_BE.domain.situation.dto.response.SituationSessionReplyResponse;
 import com.example.GoSonGim_BE.domain.situation.dto.response.SituationSessionStartResponse;
 import com.example.GoSonGim_BE.domain.situation.entity.Situation;
 import com.example.GoSonGim_BE.domain.situation.entity.SituationCategory;
+import com.example.GoSonGim_BE.domain.situation.entity.SituationLog;
 import com.example.GoSonGim_BE.domain.situation.entity.SituationSession;
 import com.example.GoSonGim_BE.domain.situation.exception.SituationExceptions;
 import com.example.GoSonGim_BE.domain.situation.repository.SessionStorage;
+import com.example.GoSonGim_BE.domain.situation.repository.SituationLogRepository;
 import com.example.GoSonGim_BE.domain.situation.repository.SituationRepository;
+import com.example.GoSonGim_BE.domain.users.entity.User;
+import com.example.GoSonGim_BE.domain.users.repository.UserRepository;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -37,6 +43,8 @@ public class SituationServiceImpl implements SituationService {
 
     private final SituationRepository situationRepository;
     private final SessionStorage sessionStorage;
+    private final SituationLogRepository situationLogRepository;
+    private final UserRepository userRepository;
     private final ObjectMapper objectMapper;
 
     @Override
@@ -301,5 +309,98 @@ public class SituationServiceImpl implements SituationService {
             log.error("대화 내역 직렬화 실패", e);
             return "[]";
         }
+    }
+    
+    @Override
+    @Transactional
+    public SituationSessionEndResponse endSession(Long userId, SituationSessionEndRequest request) {
+        SituationSession session = sessionStorage.findById(request.sessionId())
+            .orElseThrow(() -> new SituationExceptions.SessionNotFoundException(request.sessionId()));
+        
+        if (!session.getUserId().equals(userId)) {
+            throw new SituationExceptions.SessionAccessDeniedException(request.sessionId());
+        }
+        
+        if (session.getStatus() == SituationSession.SessionStatus.COMPLETED) {
+            throw new SituationExceptions.SessionInvalidException("이미 종료된 세션입니다.");
+        }
+        
+        Situation situation = situationRepository.findById(session.getSituationId())
+            .orElseThrow(() -> new SituationExceptions.SituationNotFoundException(session.getSituationId()));
+        
+        User user = userRepository.findById(userId)
+            .orElseThrow(() -> new RuntimeException("사용자를 찾을 수 없습니다: " + userId));
+        
+        List<Map<String, Object>> conversationHistory = parseConversationHistoryWithEvaluation(
+            session.getConversationHistory());
+        
+        if (conversationHistory.isEmpty()) {
+            throw new SituationExceptions.SessionInvalidException(
+                "대화 내역이 비어있습니다. 세션을 다시 시작해주세요.");
+        }
+        
+        SituationSessionReplyResponse.FinalSummary finalSummary = generateFinalSummaryFromHistory(
+            conversationHistory);
+        
+        SituationLog situationLog = SituationLog.builder()
+            .situation(situation)
+            .user(user)
+            .aiVideoUrl(session.getHeygenUrl())
+            .audioFileKey(null)
+            .targetWord(null)
+            .conversation(session.getConversationHistory())
+            .isSuccess(finalSummary.averageScore() >= 70.0f)
+            .evaluationScore(finalSummary.averageScore())
+            .evaluationFeedback(finalSummary.finalFeedback())
+            .build();
+        
+        SituationLog savedLog = situationLogRepository.save(situationLog);
+        
+        SituationSession completedSession = SituationSession.builder()
+            .sessionId(session.getSessionId())
+            .userId(session.getUserId())
+            .situationId(session.getSituationId())
+            .heygenSessionId(session.getHeygenSessionId())
+            .heygenAccessToken(session.getHeygenAccessToken())
+            .heygenUrl(session.getHeygenUrl())
+            .currentStep(session.getCurrentStep())
+            .conversationHistory(session.getConversationHistory())
+            .createdAt(session.getCreatedAt())
+            .expiresAt(session.getExpiresAt())
+            .status(SituationSession.SessionStatus.COMPLETED)
+            .build();
+        
+        sessionStorage.save(completedSession);
+        
+        return new SituationSessionEndResponse(savedLog.getId(), finalSummary);
+    }
+    
+    private SituationSessionReplyResponse.FinalSummary generateFinalSummaryFromHistory(
+            List<Map<String, Object>> conversationHistory) {
+        float totalScore = 0.0f;
+        int count = 0;
+        boolean lastEvaluationSuccess = true;
+        
+        for (Map<String, Object> turn : conversationHistory) {
+            @SuppressWarnings("unchecked")
+            Map<String, Object> evaluation = (Map<String, Object>) turn.get("evaluation");
+            if (evaluation != null) {
+                if (evaluation.get("score") instanceof Number scoreObj) {
+                    totalScore += scoreObj.floatValue();
+                    count++;
+                }
+                Object isSuccessObj = evaluation.get("isSuccess");
+                if (isSuccessObj instanceof Boolean && !((Boolean) isSuccessObj)) {
+                    lastEvaluationSuccess = false;
+                }
+            }
+        }
+        
+        float averageScore = count > 0 ? totalScore / count : 0.0f;
+        String finalFeedback = lastEvaluationSuccess
+            ? "전체적으로 주제에 맞는 훌륭한 답변이었어요"
+            : "이번 상황극은 거의 완벽했어요! 다음에는 연습해보면 좋겠어요.";
+        
+        return new SituationSessionReplyResponse.FinalSummary(averageScore, finalFeedback);
     }
 }

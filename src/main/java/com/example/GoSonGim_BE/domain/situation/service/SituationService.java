@@ -1,11 +1,13 @@
 package com.example.GoSonGim_BE.domain.situation.service;
 
 import com.example.GoSonGim_BE.domain.situation.dto.request.SituationCreateRequest;
+import com.example.GoSonGim_BE.domain.situation.dto.request.SituationSessionEndRequest;
 import com.example.GoSonGim_BE.domain.situation.dto.request.SituationSessionReplyRequest;
 import com.example.GoSonGim_BE.domain.situation.dto.request.SituationSessionStartRequest;
 import com.example.GoSonGim_BE.domain.situation.dto.response.SituationCreateResponse;
 import com.example.GoSonGim_BE.domain.situation.dto.response.SituationDetailResponse;
 import com.example.GoSonGim_BE.domain.situation.dto.response.SituationListResponse;
+import com.example.GoSonGim_BE.domain.situation.dto.response.SituationSessionEndResponse;
 import com.example.GoSonGim_BE.domain.situation.dto.response.SituationSessionReplyResponse;
 import com.example.GoSonGim_BE.domain.situation.dto.response.SituationSessionStartResponse;
 
@@ -40,8 +42,16 @@ public interface SituationService {
     /**
      * 상황극 학습 세션 답변 평가 및 다음 질문 생성
      * @param userId 사용자 ID
-     * @param request 답변 평가 요청 (sessionId, question, answer)
+     * @param request 답변 평가 요청 (sessionId, answer)
      * @return 평가 결과, 다음 질문, 턴 인덱스, 종료 여부, 최종 요약
      */
     SituationSessionReplyResponse reply(Long userId, SituationSessionReplyRequest request);
+    
+    /**
+     * 상황극 학습 세션 종료 및 학습 기록 저장
+     * @param userId 사용자 ID
+     * @param request 세션 종료 요청 (sessionId)
+     * @return 저장된 학습 기록 ID, 최종 요약
+     */
+    SituationSessionEndResponse endSession(Long userId, SituationSessionEndRequest request);
 }
