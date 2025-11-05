@@ -204,12 +204,10 @@ public class SituationServiceImpl implements SituationService {
                 .orElseThrow(() -> new UserExceptions.UserNotFoundException(userId));
             
             // SituationLog 저장
-            // conversationHistory에 이미 모든 turn의 audioFileKey가 포함되어 있으므로 별도 저장 불필요
+            // conversationHistory에 이미 모든 turn의 audioFileKey가 포함되어 있음
             SituationLog situationLog = SituationLog.builder()
                 .situation(situation)
                 .user(user)
-                .audioFileKey(null) // conversationHistory에 모든 turn의 audioFileKey 포함
-                .targetWord(null)
                 .conversation(serializeConversationHistoryWithEvaluation(conversationHistory))
                 .isSuccess(finalSummary.averageScore() >= 50.0f)
                 .evaluationScore(finalSummary.averageScore())
@@ -356,13 +354,10 @@ public class SituationServiceImpl implements SituationService {
             situation, conversationHistory, lastEvaluationSuccess);
         
         // SituationLog 저장
-        // conversationHistory에 이미 모든 turn의 audioFileKey가 포함되어 있으므로 별도 저장 불필요
+        // conversationHistory에 이미 모든 turn의 audioFileKey가 포함되어 있음
         SituationLog situationLog = SituationLog.builder()
             .situation(situation)
             .user(user)
-            .aiVideoUrl(session.getHeygenUrl())
-            .audioFileKey(null)
-            .targetWord(null)
             .conversation(session.getConversationHistory())
             .isSuccess(finalSummary.averageScore() >= 50.0f)
             .evaluationScore(finalSummary.averageScore())

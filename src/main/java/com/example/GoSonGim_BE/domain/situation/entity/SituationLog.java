@@ -51,18 +51,6 @@ public class SituationLog extends BaseEntity {
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
-    @Comment("AI 영상 URL")
-    @Column(name = "ai_video_url")
-    private String aiVideoUrl;
-
-    @Comment("녹음 파일 S3 경로")
-    @Column(name = "audio_file_key")
-    private String audioFileKey;
-
-    @Comment("학습 단어")
-    @Column(name = "target_word")
-    private String targetWord;
-
     @Comment("대화 내용")
     @Column(name = "conversation", columnDefinition = "LONGTEXT")
     private String conversation;
@@ -80,14 +68,10 @@ public class SituationLog extends BaseEntity {
     private String evaluationFeedback;
 
     @Builder
-    public SituationLog(Situation situation, User user, String aiVideoUrl,
-                        String audioFileKey, String targetWord, String conversation,
+    public SituationLog(Situation situation, User user, String conversation,
                         Boolean isSuccess, Float evaluationScore, String evaluationFeedback) {
         this.situation = situation;
         this.user = user;
-        this.aiVideoUrl = aiVideoUrl;
-        this.audioFileKey = audioFileKey;
-        this.targetWord = targetWord;
         this.conversation = conversation;
         this.isSuccess = isSuccess;
         this.evaluationScore = evaluationScore;
