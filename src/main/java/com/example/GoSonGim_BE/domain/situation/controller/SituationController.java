@@ -73,46 +73,43 @@ public class SituationController {
      */
     @Operation(summary = "상황극 생성")
     @PostMapping
-    public ResponseEntity<ApiResult<SituationCreateResponse>> createSituation(@Valid @RequestBody SituationCreateRequest request) {
-        SituationCreateResponse response = situationService.createSituation(request);
-
-        ApiResult<SituationCreateResponse> apiResult = ApiResult.success(
-            201, "상황극을 생성했습니다.", response);
-
-        return ResponseEntity.status(HttpStatus.CREATED).body(apiResult);
-    }
-  
-    @PostMapping
-    public ResponseEntity<ApiResponse<SituationCreateResponse>> createSituation(
+    public ResponseEntity<ApiResult<SituationCreateResponse>> createSituation(
             @Valid @RequestBody SituationCreateRequest request) {
         SituationCreateResponse response = situationService.createSituation(request);
-        return ResponseEntity.status(HttpStatus.CREATED)
-            .body(ApiResponse.success(201, "상황극을 생성했습니다.", response));
+        ApiResult<SituationCreateResponse> apiResult = ApiResult.success(201, "상황극을 생성했습니다.", response);
+        return ResponseEntity.status(HttpStatus.CREATED).body(apiResult);
     }
     
+    @Operation(summary = "대화 시작")
     @PostMapping("/session/start")
-    public ResponseEntity<ApiResponse<SituationSessionStartResponse>> startSession(
+    public ResponseEntity<ApiResult<SituationSessionStartResponse>> startSession(
             Authentication authentication,
             @Valid @RequestBody SituationSessionStartRequest request) {
         Long userId = (Long) authentication.getPrincipal();
         SituationSessionStartResponse response = situationService.startSession(userId, request);
-        return ResponseEntity.ok(ApiResponse.success(200, "상황극 학습 세션이 시작되었습니다.", response));
+        ApiResult<SituationSessionStartResponse> apiResult = ApiResult.success(200, "상황극 학습 세션이 시작되었습니다.", response);
+        return ResponseEntity.ok(apiResult);
     }
     
+    @Operation(summary = "답변 평가와 다음 질문 생성")
     @PostMapping("/session/reply")
-    public ResponseEntity<ApiResponse<SituationSessionReplyResponse>> reply(
+    public ResponseEntity<ApiResult<SituationSessionReplyResponse>> reply(
             Authentication authentication,
             @Valid @RequestBody SituationSessionReplyRequest request) {
         Long userId = (Long) authentication.getPrincipal();
         SituationSessionReplyResponse response = situationService.reply(userId, request);
-        return ResponseEntity.ok(ApiResponse.success(200, "요청이 성공적으로 처리되었습니다.", response));
+        ApiResult<SituationSessionReplyResponse> apiResult = ApiResult.success(200, "요청이 성공적으로 처리되었습니다.", response);
+        return ResponseEntity.ok(apiResult);
     }
     
+    @Operation(summary = "대화 종료")
     @PostMapping("/session/complete")
-    public ResponseEntity<ApiResponse<SituationSessionEndResponse>> endSession(
+    public ResponseEntity<ApiResult<SituationSessionEndResponse>> endSession(
             Authentication authentication,
             @Valid @RequestBody SituationSessionEndRequest request) {
         Long userId = (Long) authentication.getPrincipal();
         SituationSessionEndResponse response = situationService.endSession(userId, request);
-        return ResponseEntity.ok(ApiResponse.success(200, "상황극 학습 세션이 종료되었습니다.", response));
+        ApiResult<SituationSessionEndResponse> apiResult = ApiResult.success(200, "상황극 학습 세션이 종료되었습니다.", response);
+        return ResponseEntity.ok(apiResult);
+    }
 }
