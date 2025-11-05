@@ -1,6 +1,7 @@
 package com.example.GoSonGim_BE.domain.kit.service.impl;
 
 import com.example.GoSonGim_BE.domain.kit.dto.response.PronunciationAssessmentResponse;
+import com.example.GoSonGim_BE.domain.kit.dto.response.SpeechToTextResponse;
 import com.example.GoSonGim_BE.domain.kit.service.PronunciationAssessmentService;
 import org.springframework.http.*;
 import org.springframework.web.client.RestTemplate;
@@ -28,6 +29,9 @@ public class PronunciationAssessmentServiceImpl implements PronunciationAssessme
 
     @Value("${azure.speech.region}")
     private String speechRegion;
+    
+    @Value("${openai.api.key}")
+    private String openaiApiKey;
 
     @Override
     public PronunciationAssessmentResponse assessPronunciation(InputStream audioStream, String targetWord) {
@@ -102,6 +106,90 @@ public class PronunciationAssessmentServiceImpl implements PronunciationAssessme
         // 응답 파싱 및 변환
         return parseAzureRestResponse(response.getBody(), targetWord);
     }
+    
+    @Override
+    public SpeechToTextResponse transcribe(InputStream audioStream) {
+        try {
+            byte[] audioData = readStreamToByteArray(audioStream);
+            return callOpenAIWhisperApi(audioData);
+        } catch (Exception e) {
+            log.error("음성 인식 실패", e);
+            throw new RuntimeException("음성 인식 실패: " + e.getMessage(), e);
+        }
+    }
+    
+    /**
+     * OpenAI Whisper API를 사용하여 음성을 텍스트로 변환
+     * 
+     * @param audioData 오디오 파일 바이트 배열
+     * @return 인식된 텍스트와 신뢰도
+     */
+    private SpeechToTextResponse callOpenAIWhisperApi(byte[] audioData) throws Exception {
+        String endpoint = "https://api.openai.com/v1/audio/transcriptions";
+        
+        HttpHeaders headers = new HttpHeaders();
+        headers.set("Authorization", "Bearer " + openaiApiKey);
+        headers.setContentType(MediaType.MULTIPART_FORM_DATA);
+        
+        org.springframework.util.LinkedMultiValueMap<String, Object> body = new org.springframework.util.LinkedMultiValueMap<>();
+        body.add("file", new org.springframework.core.io.ByteArrayResource(audioData) {
+            @Override
+            public String getFilename() {
+                return "audio.wav";
+            }
+        });
+        body.add("model", "whisper-1");
+        body.add("language", "ko");
+        body.add("response_format", "verbose_json");
+        
+        HttpEntity<org.springframework.util.LinkedMultiValueMap<String, Object>> request = new HttpEntity<>(body, headers);
+        
+        RestTemplate restTemplate = new RestTemplate();
+        ResponseEntity<String> response = restTemplate.exchange(endpoint, HttpMethod.POST, request, String.class);
+        
+        return parseWhisperResponse(response.getBody());
+    }
+    
+    /**
+     * OpenAI Whisper API 응답 파싱
+     */
+    private SpeechToTextResponse parseWhisperResponse(String responseBody) throws Exception {
+        ObjectMapper objectMapper = new ObjectMapper();
+        Map<String, Object> responseMap = objectMapper.readValue(responseBody, Map.class);
+        
+        String recognizedText = (String) responseMap.get("text");
+        
+        // Whisper의 평균 log probability를 신뢰도로 변환
+        double avgConfidence = calculateWhisperConfidence(responseMap);
+        
+        return new SpeechToTextResponse(
+            recognizedText != null ? recognizedText : "",
+            avgConfidence
+        );
+    }
+    
+    /**
+     * Whisper 응답에서 신뢰도 계산
+     */
+    private double calculateWhisperConfidence(Map<String, Object> responseMap) {
+        @SuppressWarnings("unchecked")
+        java.util.List<Map<String, Object>> segments = (java.util.List<Map<String, Object>>) responseMap.get("segments");
+        
+        if (segments == null || segments.isEmpty()) {
+            return 1.0;
+        }
+        
+        double totalConfidence = 0.0;
+        for (Map<String, Object> segment : segments) {
+            Number avgLogprob = (Number) segment.get("avg_logprob");
+            if (avgLogprob != null) {
+                totalConfidence += Math.exp(avgLogprob.doubleValue());
+            }
+        }
+        
+        return totalConfidence / segments.size();
+    }
+    
     
     /**
      * Azure REST API 응답을 PronunciationAssessmentResponse로 변환
