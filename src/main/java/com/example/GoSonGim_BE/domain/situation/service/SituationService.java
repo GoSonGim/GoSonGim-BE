@@ -10,6 +10,8 @@ import com.example.GoSonGim_BE.domain.situation.dto.response.SituationListRespon
 import com.example.GoSonGim_BE.domain.situation.dto.response.SituationSessionEndResponse;
 import com.example.GoSonGim_BE.domain.situation.dto.response.SituationSessionReplyResponse;
 import com.example.GoSonGim_BE.domain.situation.dto.response.SituationSessionStartResponse;
+import com.example.GoSonGim_BE.domain.situation.dto.response.SituationSpeechToTextResponse;
+import org.springframework.web.multipart.MultipartFile;
 
 public interface SituationService {
     /**
@@ -54,4 +56,11 @@ public interface SituationService {
      * @return 저장된 학습 기록 ID, 최종 요약
      */
     SituationSessionEndResponse endSession(Long userId, SituationSessionEndRequest request);
+    
+    /**
+     * 음성 인식(STT) 수행
+     * @param audioFile 음성 파일
+     * @return 인식된 텍스트와 신뢰도
+     */
+    SituationSpeechToTextResponse transcribeAudio(MultipartFile audioFile);
 }
