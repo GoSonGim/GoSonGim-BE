@@ -5,7 +5,8 @@ spring:
       - auth
       - s3
       - azure
-      #- redis
+      - redis
+      - openai
 
   config:
     import: optional:file:.env[.properties]
@@ -20,7 +21,7 @@ server:
   port: 8080
 
 cors:
-  allowed-origins: http://localhost:3000
+  allowed-origins: http://localhost:3000, https://ttobaki.app
 
 logging:
   level:
