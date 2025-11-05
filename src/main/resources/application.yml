@@ -5,7 +5,8 @@ spring:
       - auth
       - s3
       - azure
-      #- redis
+      - redis
+      - openai
 
   config:
     import: optional:file:.env[.properties]
