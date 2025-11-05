@@ -1,6 +1,7 @@
 package com.example.GoSonGim_BE.global.exception;
 
 import com.example.GoSonGim_BE.domain.auth.exception.AuthExceptions;
+import com.example.GoSonGim_BE.domain.openai.exception.OpenAIExceptions;
 import com.example.GoSonGim_BE.domain.situation.exception.SituationExceptions;
 import com.example.GoSonGim_BE.domain.users.exception.UserExceptions;
 import com.example.GoSonGim_BE.global.dto.ApiErrorResponse;
@@ -44,6 +45,7 @@ public class GlobalExceptionHandler {
         AuthExceptions.OAuthTokenInvalidException.class,
         
         // User 도메인 예외
+        UserExceptions.UserNotFoundException.class,
         UserExceptions.UserAlreadyDeletedException.class,
         UserExceptions.UserNotDeletedException.class,
         
@@ -52,7 +54,12 @@ public class GlobalExceptionHandler {
         SituationExceptions.SessionNotFoundException.class,
         SituationExceptions.SessionAccessDeniedException.class,
         SituationExceptions.SessionNotActiveException.class,
-        SituationExceptions.SessionInvalidException.class
+        SituationExceptions.SessionInvalidException.class,
+        
+        // OpenAI 도메인 예외
+        OpenAIExceptions.OpenAIServiceException.class,
+        OpenAIExceptions.OpenAIResponseParseException.class,
+        OpenAIExceptions.OpenAIEmptyResponseException.class
     })
     public ResponseEntity<ApiErrorResponse> handleDomainExceptions(BaseException e) {
         HttpStatus status = determineStatus(e);
@@ -148,6 +155,9 @@ public class GlobalExceptionHandler {
         }
         
         // User 도메인 예외
+        if (e instanceof UserExceptions.UserNotFoundException) {
+            return HttpStatus.NOT_FOUND;
+        }
         if (e instanceof UserExceptions.UserAlreadyDeletedException) {
             return HttpStatus.CONFLICT;
         }
@@ -163,8 +173,16 @@ public class GlobalExceptionHandler {
         if (e instanceof SituationExceptions.SessionAccessDeniedException) {
             return HttpStatus.FORBIDDEN;
         }
-        if (e instanceof SituationExceptions.SessionNotActiveException) {
+        if (e instanceof SituationExceptions.SessionNotActiveException ||
+            e instanceof SituationExceptions.SessionInvalidException) {
             return HttpStatus.BAD_REQUEST;
+        }
+        
+        // OpenAI 도메인 예외
+        if (e instanceof OpenAIExceptions.OpenAIServiceException ||
+            e instanceof OpenAIExceptions.OpenAIResponseParseException ||
+            e instanceof OpenAIExceptions.OpenAIEmptyResponseException) {
+            return HttpStatus.INTERNAL_SERVER_ERROR;
         }
         
         return HttpStatus.BAD_REQUEST;

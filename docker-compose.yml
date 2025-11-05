@@ -8,7 +8,7 @@ services:
       dockerfile: Dockerfile
     container_name: gosongim-app
     environment:
-      SPRING_PROFILES_ACTIVE: datasource,auth,s3,azure,redis
+      SPRING_PROFILES_ACTIVE: datasource,auth,s3,azure,redis,openai
       DB_URL: ${DB_URL}
       DB_USERNAME: ${DB_USERNAME}
       DB_PASSWORD: ${DB_PASSWORD}
@@ -21,6 +21,7 @@ services:
       S3_SECRET_KEY: ${S3_SECRET_KEY}
       AZURE_SPEECH_KEY: ${AZURE_SPEECH_KEY}
       AZURE_SPEECH_REGION: ${AZURE_SPEECH_REGION}
+      OPENAI_API_KEY: ${OPENAI_API_KEY}
       REDIS_HOST: redis  # Docker 네트워크 내부 서비스명 사용
       REDIS_PORT: 6379
       REDIS_PASSWORD: ${REDIS_PASSWORD:-}  # 비밀번호가 없으면 빈 문자열

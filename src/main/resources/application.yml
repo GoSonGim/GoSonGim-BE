@@ -6,7 +6,7 @@ spring:
       - s3
       - azure
       - redis
-      #- openai  # TODO: 대화 생성 API 구현 시 활성화
+      - openai
 
   config:
     import: optional:file:.env[.properties]

@@ -19,6 +19,7 @@ import com.example.GoSonGim_BE.domain.situation.dto.response.SituationListRespon
 import com.example.GoSonGim_BE.domain.situation.dto.response.SituationSessionEndResponse;
 import com.example.GoSonGim_BE.domain.situation.dto.response.SituationSessionReplyResponse;
 import com.example.GoSonGim_BE.domain.situation.dto.response.SituationSessionStartResponse;
+import com.example.GoSonGim_BE.domain.openai.service.OpenAIService;
 import com.example.GoSonGim_BE.domain.situation.entity.Situation;
 import com.example.GoSonGim_BE.domain.situation.entity.SituationCategory;
 import com.example.GoSonGim_BE.domain.situation.entity.SituationLog;
@@ -28,6 +29,7 @@ import com.example.GoSonGim_BE.domain.situation.repository.SessionStorage;
 import com.example.GoSonGim_BE.domain.situation.repository.SituationLogRepository;
 import com.example.GoSonGim_BE.domain.situation.repository.SituationRepository;
 import com.example.GoSonGim_BE.domain.users.entity.User;
+import com.example.GoSonGim_BE.domain.users.exception.UserExceptions;
 import com.example.GoSonGim_BE.domain.users.repository.UserRepository;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -45,6 +47,7 @@ public class SituationServiceImpl implements SituationService {
     private final SessionStorage sessionStorage;
     private final SituationLogRepository situationLogRepository;
     private final UserRepository userRepository;
+    private final OpenAIService openAIService;
     private final ObjectMapper objectMapper;
 
     @Override
@@ -176,24 +179,22 @@ public class SituationServiceImpl implements SituationService {
         evaluationMap.put("score", evaluation.score());
         evaluationMap.put("feedback", evaluation.feedback());
         
+        int currentTurnIndex = conversationHistory.size() - 1;
         Map<String, Object> updatedTurn = new HashMap<>();
         updatedTurn.put("turnIndex", session.getCurrentStep());
         updatedTurn.put("question", currentQuestion);
         updatedTurn.put("answer", request.answer());
         updatedTurn.put("evaluation", evaluationMap);
-        conversationHistory.set(conversationHistory.size() - 1, updatedTurn);
+        conversationHistory.set(currentTurnIndex, updatedTurn);
         
         int nextTurnIndex = session.getCurrentStep() + 1;
         boolean shouldEnd = !evaluation.isSuccess() || nextTurnIndex > 5;
         
         String nextQuestion = null;
         SituationSessionReplyResponse.FinalSummary finalSummary = null;
-        SituationSession.SessionStatus nextStatus = shouldEnd 
-            ? SituationSession.SessionStatus.COMPLETED 
-            : session.getStatus();
         
         if (shouldEnd) {
-            finalSummary = generateFinalSummary(conversationHistory, evaluation.isSuccess());
+            finalSummary = generateFinalSummary(situation, conversationHistory, evaluation.isSuccess());
         } else {
             nextQuestion = generateNextQuestion(situation, conversationHistory, nextTurnIndex);
             Map<String, Object> nextTurn = new HashMap<>();
@@ -215,7 +216,7 @@ public class SituationServiceImpl implements SituationService {
             .conversationHistory(serializeConversationHistoryWithEvaluation(conversationHistory))
             .createdAt(session.getCreatedAt())
             .expiresAt(session.getExpiresAt())
-            .status(nextStatus)
+            .status(shouldEnd ? SituationSession.SessionStatus.COMPLETED : session.getStatus())
             .build();
         
         sessionStorage.save(updatedSession);
@@ -224,51 +225,36 @@ public class SituationServiceImpl implements SituationService {
             evaluation, nextQuestion, nextTurnIndex, shouldEnd, finalSummary);
     }
     
+    private String getDescription(Situation situation) {
+        return situation.getDescription() != null ? situation.getDescription() : "";
+    }
+    
     private String generateFirstQuestion(Situation situation) {
-        String description = situation.getDescription() != null ? situation.getDescription() : "";
-        return String.format("%s\n\n%s에 오신 것을 환영합니다. 무엇을 도와드릴까요?", 
-            description, situation.getSituationName());
+        return openAIService.generateFirstQuestion(getDescription(situation), situation.getSituationName());
     }
     
     private SituationSessionReplyResponse.Evaluation evaluateAnswer(
             Situation situation, String question, String answer, Integer turnIndex) {
-        boolean isSuccess = true;
-        float score = 90.0f + (float)(Math.random() * 10);
-        String feedback;
-        
-        if (answer.length() < 3) {
-            isSuccess = false;
-            score = 70.0f;
-            feedback = "답변이 너무 짧아요. 조금 더 자세히 말씀해주시면 좋겠어요.";
-        } else if (answer.contains("아니요") || answer.contains("모르겠")) {
-            isSuccess = false;
-            score = 65.0f;
-            feedback = "답변을 다시 생각해보시면 좋겠어요.";
-        } else {
-            if (turnIndex <= 2) {
-                feedback = "자연스러운 답변이에요!";
-            } else if (turnIndex <= 4) {
-                feedback = "짧지만 자연스러운 응답이에요.";
-            } else {
-                feedback = "훌륭한 답변입니다!";
-            }
-        }
-        
-        return new SituationSessionReplyResponse.Evaluation(isSuccess, feedback, score);
+        OpenAIService.EvaluationResult result = openAIService.evaluateAnswer(
+            getDescription(situation), question, answer, turnIndex);
+        return new SituationSessionReplyResponse.Evaluation(
+            result.isSuccess(), result.feedback(), result.score());
     }
     
     private String generateNextQuestion(Situation situation, List<Map<String, Object>> conversationHistory, int turnIndex) {
-        return switch (turnIndex) {
-            case 2 -> "음료는 어떤 걸로 하시겠어요?";
-            case 3 -> "식사를 다 마치셨나요?";
-            case 4 -> "맛은 어떠셨어요?";
-            case 5 -> "다음에도 또 방문해주세요!";
-            default -> "다음으로 무엇을 도와드릴까요?";
-        };
+        return openAIService.generateNextQuestion(getDescription(situation), conversationHistory, turnIndex);
     }
     
     private SituationSessionReplyResponse.FinalSummary generateFinalSummary(
-            List<Map<String, Object>> conversationHistory, boolean lastEvaluationSuccess) {
+            Situation situation, List<Map<String, Object>> conversationHistory, boolean lastEvaluationSuccess) {
+        float averageScore = calculateAverageScore(conversationHistory);
+        String finalFeedback = openAIService.generateFinalFeedback(
+            getDescription(situation), averageScore, lastEvaluationSuccess);
+        
+        return new SituationSessionReplyResponse.FinalSummary(averageScore, finalFeedback);
+    }
+    
+    private float calculateAverageScore(List<Map<String, Object>> conversationHistory) {
         float totalScore = 0.0f;
         int count = 0;
         
@@ -281,12 +267,7 @@ public class SituationServiceImpl implements SituationService {
             }
         }
         
-        float averageScore = count > 0 ? totalScore / count : 0.0f;
-        String finalFeedback = lastEvaluationSuccess
-            ? "전체적으로 주제에 맞는 훌륭한 답변이었어요"
-            : "이번 상황극은 거의 완벽했어요! 다음에는 연습해보면 좋겠어요.";
-        
-        return new SituationSessionReplyResponse.FinalSummary(averageScore, finalFeedback);
+        return count > 0 ? totalScore / count : 0.0f;
     }
     
     private List<Map<String, Object>> parseConversationHistoryWithEvaluation(String historyJson) {
@@ -329,7 +310,7 @@ public class SituationServiceImpl implements SituationService {
             .orElseThrow(() -> new SituationExceptions.SituationNotFoundException(session.getSituationId()));
         
         User user = userRepository.findById(userId)
-            .orElseThrow(() -> new RuntimeException("사용자를 찾을 수 없습니다: " + userId));
+            .orElseThrow(() -> new UserExceptions.UserNotFoundException(userId));
         
         List<Map<String, Object>> conversationHistory = parseConversationHistoryWithEvaluation(
             session.getConversationHistory());
@@ -339,8 +320,18 @@ public class SituationServiceImpl implements SituationService {
                 "대화 내역이 비어있습니다. 세션을 다시 시작해주세요.");
         }
         
-        SituationSessionReplyResponse.FinalSummary finalSummary = generateFinalSummaryFromHistory(
-            conversationHistory);
+        boolean lastEvaluationSuccess = conversationHistory.stream()
+            .filter(turn -> turn.get("evaluation") != null)
+            .map(turn -> {
+                @SuppressWarnings("unchecked")
+                Map<String, Object> evaluation = (Map<String, Object>) turn.get("evaluation");
+                return Boolean.TRUE.equals(evaluation.get("isSuccess"));
+            })
+            .reduce((first, second) -> second)
+            .orElse(false);
+        
+        SituationSessionReplyResponse.FinalSummary finalSummary = generateFinalSummary(
+            situation, conversationHistory, lastEvaluationSuccess);
         
         SituationLog situationLog = SituationLog.builder()
             .situation(situation)
@@ -349,7 +340,7 @@ public class SituationServiceImpl implements SituationService {
             .audioFileKey(null)
             .targetWord(null)
             .conversation(session.getConversationHistory())
-            .isSuccess(finalSummary.averageScore() >= 70.0f)
+            .isSuccess(finalSummary.averageScore() >= 50.0f)
             .evaluationScore(finalSummary.averageScore())
             .evaluationFeedback(finalSummary.finalFeedback())
             .build();
@@ -373,34 +364,5 @@ public class SituationServiceImpl implements SituationService {
         sessionStorage.save(completedSession);
         
         return new SituationSessionEndResponse(savedLog.getId(), finalSummary);
-    }
-    
-    private SituationSessionReplyResponse.FinalSummary generateFinalSummaryFromHistory(
-            List<Map<String, Object>> conversationHistory) {
-        float totalScore = 0.0f;
-        int count = 0;
-        boolean lastEvaluationSuccess = true;
-        
-        for (Map<String, Object> turn : conversationHistory) {
-            @SuppressWarnings("unchecked")
-            Map<String, Object> evaluation = (Map<String, Object>) turn.get("evaluation");
-            if (evaluation != null) {
-                if (evaluation.get("score") instanceof Number scoreObj) {
-                    totalScore += scoreObj.floatValue();
-                    count++;
-                }
-                Object isSuccessObj = evaluation.get("isSuccess");
-                if (isSuccessObj instanceof Boolean && !((Boolean) isSuccessObj)) {
-                    lastEvaluationSuccess = false;
-                }
-            }
-        }
-        
-        float averageScore = count > 0 ? totalScore / count : 0.0f;
-        String finalFeedback = lastEvaluationSuccess
-            ? "전체적으로 주제에 맞는 훌륭한 답변이었어요"
-            : "이번 상황극은 거의 완벽했어요! 다음에는 연습해보면 좋겠어요.";
-        
-        return new SituationSessionReplyResponse.FinalSummary(averageScore, finalFeedback);
     }
 }
