@@ -141,6 +141,7 @@ public class SituationServiceImpl implements SituationService {
     }
     
     @Override
+    @Transactional
     public SituationSessionReplyResponse reply(Long userId, SituationSessionReplyRequest request) {
         SituationSession session = sessionStorage.findById(request.sessionId())
             .orElseThrow(() -> new SituationExceptions.SessionNotFoundException(request.sessionId()));
@@ -184,6 +185,7 @@ public class SituationServiceImpl implements SituationService {
         updatedTurn.put("turnIndex", session.getCurrentStep());
         updatedTurn.put("question", currentQuestion);
         updatedTurn.put("answer", request.answer());
+        updatedTurn.put("audioFileKey", request.audioFileKey()); // 오디오 파일 키 저장
         updatedTurn.put("evaluation", evaluationMap);
         conversationHistory.set(currentTurnIndex, updatedTurn);
         
@@ -194,7 +196,27 @@ public class SituationServiceImpl implements SituationService {
         SituationSessionReplyResponse.FinalSummary finalSummary = null;
         
         if (shouldEnd) {
+            // 세션 종료 시 최종 요약 생성 및 SituationLog 저장
             finalSummary = generateFinalSummary(situation, conversationHistory, evaluation.isSuccess());
+            
+            // User 조회
+            User user = userRepository.findById(userId)
+                .orElseThrow(() -> new UserExceptions.UserNotFoundException(userId));
+            
+            // SituationLog 저장
+            // conversationHistory에 이미 모든 turn의 audioFileKey가 포함되어 있으므로 별도 저장 불필요
+            SituationLog situationLog = SituationLog.builder()
+                .situation(situation)
+                .user(user)
+                .audioFileKey(null) // conversationHistory에 모든 turn의 audioFileKey 포함
+                .targetWord(null)
+                .conversation(serializeConversationHistoryWithEvaluation(conversationHistory))
+                .isSuccess(finalSummary.averageScore() >= 50.0f)
+                .evaluationScore(finalSummary.averageScore())
+                .evaluationFeedback(finalSummary.finalFeedback())
+                .build();
+            
+            situationLogRepository.save(situationLog);
         } else {
             nextQuestion = generateNextQuestion(situation, conversationHistory, nextTurnIndex);
             Map<String, Object> nextTurn = new HashMap<>();
@@ -333,6 +355,8 @@ public class SituationServiceImpl implements SituationService {
         SituationSessionReplyResponse.FinalSummary finalSummary = generateFinalSummary(
             situation, conversationHistory, lastEvaluationSuccess);
         
+        // SituationLog 저장
+        // conversationHistory에 이미 모든 turn의 audioFileKey가 포함되어 있으므로 별도 저장 불필요
         SituationLog situationLog = SituationLog.builder()
             .situation(situation)
             .user(user)

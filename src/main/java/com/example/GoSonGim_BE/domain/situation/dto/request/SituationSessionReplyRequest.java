@@ -10,6 +10,11 @@ public record SituationSessionReplyRequest(
     String sessionId,
     
     @NotBlank(message = "답변은 필수입니다.")
-    String answer
+    String answer,
+    
+    /**
+     * 오디오 파일 S3 키 (선택적, 복습용)
+     */
+    String audioFileKey
 ) {}
 
