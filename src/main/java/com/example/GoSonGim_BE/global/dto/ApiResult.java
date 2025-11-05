@@ -3,7 +3,7 @@ package com.example.GoSonGim_BE.global.dto;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 
-public record ApiResponse<T>(
+public record ApiResult<T>(
     boolean success,
     int status,
     String message,
@@ -12,8 +12,8 @@ public record ApiResponse<T>(
 ) {
     private static final DateTimeFormatter TIMESTAMP_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
     
-    public static <T> ApiResponse<T> success(int status, String message, T result) {
-        return new ApiResponse<>(
+    public static <T> ApiResult<T> success(int status, String message, T result) {
+        return new ApiResult<>(
             true, 
             status, 
             message, 
