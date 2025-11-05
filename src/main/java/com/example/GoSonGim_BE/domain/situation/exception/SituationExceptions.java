@@ -52,5 +52,14 @@ public class SituationExceptions {
             super(message, "SESSION_INVALID");
         }
     }
+    
+    /**
+     * 음성 인식(STT) 실패 예외
+     */
+    public static class SpeechToTextException extends BaseException {
+        public SpeechToTextException(String message) {
+            super(message, "SPEECH_TO_TEXT_FAILED");
+        }
+    }
 }
 

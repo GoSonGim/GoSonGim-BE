@@ -55,6 +55,7 @@ public class GlobalExceptionHandler {
         SituationExceptions.SessionAccessDeniedException.class,
         SituationExceptions.SessionNotActiveException.class,
         SituationExceptions.SessionInvalidException.class,
+        SituationExceptions.SpeechToTextException.class,
         
         // OpenAI 도메인 예외
         OpenAIExceptions.OpenAIServiceException.class,
@@ -176,6 +177,9 @@ public class GlobalExceptionHandler {
         if (e instanceof SituationExceptions.SessionNotActiveException ||
             e instanceof SituationExceptions.SessionInvalidException) {
             return HttpStatus.BAD_REQUEST;
+        }
+        if (e instanceof SituationExceptions.SpeechToTextException) {
+            return HttpStatus.INTERNAL_SERVER_ERROR;
         }
         
         // OpenAI 도메인 예외
