@@ -5,13 +5,16 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
+import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
 
 import com.example.GoSonGim_BE.domain.situation.dto.request.SituationCreateRequest;
 import com.example.GoSonGim_BE.domain.situation.dto.request.SituationSessionEndRequest;
@@ -23,11 +26,13 @@ import com.example.GoSonGim_BE.domain.situation.dto.response.SituationListRespon
 import com.example.GoSonGim_BE.domain.situation.dto.response.SituationSessionEndResponse;
 import com.example.GoSonGim_BE.domain.situation.dto.response.SituationSessionReplyResponse;
 import com.example.GoSonGim_BE.domain.situation.dto.response.SituationSessionStartResponse;
+import com.example.GoSonGim_BE.domain.situation.dto.response.SituationSpeechToTextResponse;
 import com.example.GoSonGim_BE.domain.situation.service.SituationService;
 import com.example.GoSonGim_BE.global.constant.ApiVersion;
 import com.example.GoSonGim_BE.global.dto.ApiResult;
 
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotBlank;
 import lombok.RequiredArgsConstructor;
 
 @Tag(name = "Situation API")
@@ -110,6 +115,16 @@ public class SituationController {
         Long userId = (Long) authentication.getPrincipal();
         SituationSessionEndResponse response = situationService.endSession(userId, request);
         ApiResult<SituationSessionEndResponse> apiResult = ApiResult.success(200, "상황극 학습 세션이 종료되었습니다.", response);
+        return ResponseEntity.ok(apiResult);
+    }
+    
+    @Operation(summary = "사용자 답변 STT 변환")
+    @PostMapping(value = "/stt", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<ApiResult<SituationSpeechToTextResponse>> speechToText(
+            Authentication authentication,
+            @RequestPart("audioFile") MultipartFile file) {
+        SituationSpeechToTextResponse response = situationService.transcribeAudio(file);
+        ApiResult<SituationSpeechToTextResponse> apiResult = ApiResult.success(200, "음성 인식 성공", response);
         return ResponseEntity.ok(apiResult);
     }
 }

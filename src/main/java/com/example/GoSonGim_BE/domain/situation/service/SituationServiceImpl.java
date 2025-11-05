@@ -19,7 +19,11 @@ import com.example.GoSonGim_BE.domain.situation.dto.response.SituationListRespon
 import com.example.GoSonGim_BE.domain.situation.dto.response.SituationSessionEndResponse;
 import com.example.GoSonGim_BE.domain.situation.dto.response.SituationSessionReplyResponse;
 import com.example.GoSonGim_BE.domain.situation.dto.response.SituationSessionStartResponse;
+import com.example.GoSonGim_BE.domain.situation.dto.response.SituationSpeechToTextResponse;
 import com.example.GoSonGim_BE.domain.openai.service.OpenAIService;
+import com.example.GoSonGim_BE.domain.kit.service.PronunciationAssessmentService;
+import com.example.GoSonGim_BE.domain.kit.dto.response.SpeechToTextResponse;
+import org.springframework.web.multipart.MultipartFile;
 import com.example.GoSonGim_BE.domain.situation.entity.Situation;
 import com.example.GoSonGim_BE.domain.situation.entity.SituationCategory;
 import com.example.GoSonGim_BE.domain.situation.entity.SituationLog;
@@ -48,6 +52,7 @@ public class SituationServiceImpl implements SituationService {
     private final SituationLogRepository situationLogRepository;
     private final UserRepository userRepository;
     private final OpenAIService openAIService;
+    private final PronunciationAssessmentService pronunciationAssessmentService;
     private final ObjectMapper objectMapper;
 
     @Override
@@ -383,5 +388,19 @@ public class SituationServiceImpl implements SituationService {
         sessionStorage.save(completedSession);
         
         return new SituationSessionEndResponse(savedLog.getId(), finalSummary);
+    }
+    
+    @Override
+    public SituationSpeechToTextResponse transcribeAudio(MultipartFile audioFile) {
+        try {
+            SpeechToTextResponse result = pronunciationAssessmentService.transcribe(audioFile.getInputStream());
+            
+            return new SituationSpeechToTextResponse(
+                result.recognizedText(),
+                result.confidence()
+            );
+        } catch (Exception e) {
+            throw new SituationExceptions.SpeechToTextException("음성 인식에 실패했습니다.");
+        }
     }
 }
