@@ -1,6 +1,8 @@
 package com.example.GoSonGim_BE.domain.review.service.impl;
 
+import com.example.GoSonGim_BE.domain.files.service.S3Service;
 import com.example.GoSonGim_BE.domain.kit.repository.KitStageLogRepository;
+import com.example.GoSonGim_BE.domain.review.dto.response.ReviewSituationDetailResponse;
 import com.example.GoSonGim_BE.domain.review.dto.response.ReviewSituationItemResponse;
 import com.example.GoSonGim_BE.domain.review.dto.response.ReviewSituationsResponse;
 import com.example.GoSonGim_BE.domain.review.dto.response.ReviewWordsResponse;
@@ -10,18 +12,25 @@ import com.example.GoSonGim_BE.domain.situation.entity.SituationCategory;
 import com.example.GoSonGim_BE.domain.situation.entity.SituationLog;
 import com.example.GoSonGim_BE.domain.situation.repository.SituationLogRepository;
 import com.example.GoSonGim_BE.global.util.PaginationUtil;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.domain.Slice;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.net.URL;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 /**
  * 복습 서비스 구현체
  */
+@Slf4j
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
@@ -29,10 +38,13 @@ public class ReviewServiceImpl implements ReviewService {
     
     private final KitStageLogRepository kitStageLogRepository;
     private final SituationLogRepository situationLogRepository;
+    private final S3Service s3Service;
+    private final ObjectMapper objectMapper;
     
     private static final int MAX_REVIEW_WORDS = 5;
     private static final int SAMPLE_SIZE_FOR_RANDOM = 200;
     private static final int MAX_PAGE_SIZE = 50;
+    private static final int AUDIO_URL_EXPIRATION_MINUTES = 60;
     
     @Override
     public ReviewWordsResponse getRandomReviewWords(Long userId) {
@@ -81,6 +93,80 @@ public class ReviewServiceImpl implements ReviewService {
             return SituationCategory.from(category);
         } catch (IllegalArgumentException e) {
             throw new ReviewExceptions.InvalidQueryParameterException("category");
+        }
+    }
+    
+    @Override
+    public ReviewSituationDetailResponse getReviewSituationDetail(Long userId, Long recordingId) {
+        // 학습 기록 조회
+        SituationLog situationLog = situationLogRepository.findById(recordingId)
+            .orElseThrow(() -> new ReviewExceptions.SituationLogNotFoundException(recordingId));
+        
+        // 접근 권한 확인
+        if (!situationLog.getUser().getId().equals(userId)) {
+            throw new ReviewExceptions.SituationLogAccessDeniedException(recordingId);
+        }
+        
+        // 상황극 정보
+        ReviewSituationDetailResponse.SituationInfo situationInfo = 
+            new ReviewSituationDetailResponse.SituationInfo(
+                situationLog.getSituation().getId(),
+                situationLog.getSituation().getSituationName()
+            );
+        
+        // 평가 정보
+        ReviewSituationDetailResponse.EvaluationInfo evaluationInfo = 
+            new ReviewSituationDetailResponse.EvaluationInfo(
+                situationLog.getEvaluationScore(),
+                situationLog.getEvaluationFeedback()
+            );
+        
+        // 대화 내용 파싱 및 오디오 URL 생성
+        List<ReviewSituationDetailResponse.ConversationTurn> conversation = 
+            parseConversationWithAudioUrls(situationLog.getConversation());
+        
+        return new ReviewSituationDetailResponse(recordingId, situationInfo, evaluationInfo, conversation);
+    }
+    
+    private List<ReviewSituationDetailResponse.ConversationTurn> parseConversationWithAudioUrls(String conversationJson) {
+        try {
+            if (conversationJson == null || conversationJson.isBlank() || conversationJson.equals("[]")) {
+                return new ArrayList<>();
+            }
+            
+            TypeReference<List<Map<String, Object>>> typeRef = new TypeReference<>() {};
+            List<Map<String, Object>> conversationList = objectMapper.readValue(conversationJson, typeRef);
+            
+            return conversationList.stream()
+                .map(turn -> {
+                    String question = (String) turn.get("question");
+                    String answerText = (String) turn.get("answer");
+                    String audioFileKey = (String) turn.get("audioFileKey");
+                    
+                    // 오디오 URL 생성
+                    String audioUrl = null;
+                    Integer audioExpiresIn = AUDIO_URL_EXPIRATION_MINUTES * 60; // 초 단위로 변환
+                    if (audioFileKey != null && !audioFileKey.isBlank()) {
+                        try {
+                            URL presignedUrl = s3Service.generateDownloadPresignedUrl(
+                                audioFileKey, 
+                                AUDIO_URL_EXPIRATION_MINUTES
+                            );
+                            audioUrl = presignedUrl.toString();
+                        } catch (Exception e) {
+                            log.warn("오디오 URL 생성 실패: fileKey={}", audioFileKey, e);
+                        }
+                    }
+                    
+                    ReviewSituationDetailResponse.Answer answer = 
+                        new ReviewSituationDetailResponse.Answer(answerText, audioUrl, audioExpiresIn);
+                    
+                    return new ReviewSituationDetailResponse.ConversationTurn(question, answer);
+                })
+                .toList();
+        } catch (Exception e) {
+            log.error("대화 내역 파싱 실패: {}", conversationJson, e);
+            return new ArrayList<>();
         }
     }
     
