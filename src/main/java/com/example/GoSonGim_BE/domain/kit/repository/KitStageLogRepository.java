@@ -108,4 +108,27 @@ public interface KitStageLogRepository extends JpaRepository<KitStageLog, Long> 
            "AND ksl.isSuccess = true " +
            "AND ksl.targetWord IS NOT NULL")
     Long countDistinctDaysByUserId(@Param("userId") Long userId);
+    
+    /**
+     * 사용자가 학습한 중복 제거된 단어 목록을 랜덤으로 조회 (복습용)
+     * 
+     * @param userId 사용자 ID
+     * @param sampleSize 최근 추출할 최대 단어 수
+     * @param limit 조회할 최대 개수
+     * @return 랜덤으로 선택된 단어 목록
+     */
+    @Query(value = "SELECT word FROM (" +
+           "SELECT DISTINCT ksl.target_word AS word " +
+           "FROM kit_stage_log ksl " +
+           "WHERE ksl.user_id = :userId " +
+           "AND ksl.is_success = true " +
+           "AND ksl.target_word IS NOT NULL " +
+           "ORDER BY ksl.created_at DESC " +
+           "LIMIT :sampleSize" +
+           ") recent_words " +
+           "ORDER BY RAND() " +
+           "LIMIT :limit", nativeQuery = true)
+    List<String> findRandomDistinctWordsByUserId(@Param("userId") Long userId,
+                                                 @Param("sampleSize") int sampleSize,
+                                                 @Param("limit") int limit);
 }
