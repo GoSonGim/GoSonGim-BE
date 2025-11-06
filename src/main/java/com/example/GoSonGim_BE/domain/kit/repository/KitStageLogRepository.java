@@ -121,7 +121,6 @@ public interface KitStageLogRepository extends JpaRepository<KitStageLog, Long> 
            "SELECT DISTINCT ksl.target_word AS word " +
            "FROM kit_stage_log ksl " +
            "WHERE ksl.user_id = :userId " +
-           "AND ksl.is_success = true " +
            "AND ksl.target_word IS NOT NULL " +
            "ORDER BY ksl.created_at DESC " +
            "LIMIT :sampleSize" +
