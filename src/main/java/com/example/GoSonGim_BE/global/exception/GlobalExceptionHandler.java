@@ -61,6 +61,8 @@ public class GlobalExceptionHandler {
         // Review 도메인 예외
         ReviewExceptions.NoLearningHistoryException.class,
         ReviewExceptions.InvalidQueryParameterException.class,
+        ReviewExceptions.SituationLogNotFoundException.class,
+        ReviewExceptions.SituationLogAccessDeniedException.class,
         
         // OpenAI 도메인 예외
         OpenAIExceptions.OpenAIServiceException.class,
@@ -188,11 +190,15 @@ public class GlobalExceptionHandler {
         }
         
         // Review 도메인 예외
-        if (e instanceof ReviewExceptions.NoLearningHistoryException) {
+        if (e instanceof ReviewExceptions.NoLearningHistoryException ||
+            e instanceof ReviewExceptions.SituationLogNotFoundException) {
             return HttpStatus.NOT_FOUND;
         }
         if (e instanceof ReviewExceptions.InvalidQueryParameterException) {
             return HttpStatus.BAD_REQUEST;
+        }
+        if (e instanceof ReviewExceptions.SituationLogAccessDeniedException) {
+            return HttpStatus.FORBIDDEN;
         }
         
         // OpenAI 도메인 예외
