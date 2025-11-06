@@ -28,7 +28,7 @@ public final class PaginationUtil {
     public static Pageable createPageable(int page, int size, int maxSize, Sort sort,
                                           Function<String, ? extends RuntimeException> exceptionProvider) {
         if (exceptionProvider == null) {
-            throw new IllegalArgumentException("exceptionProvider must not be null");
+            throw new IllegalArgumentException("exceptionProvider는 null일 수 없습니다.");
         }
 
         if (page < 1) {
