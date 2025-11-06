@@ -15,5 +15,14 @@ public class ReviewExceptions {
             super("학습 기록이 존재하지 않습니다.", "NO_LEARNING_HISTORY");
         }
     }
+    
+    /**
+     * 잘못된 쿼리 파라미터 예외
+     */
+    public static class InvalidQueryParameterException extends BaseException {
+        public InvalidQueryParameterException(String parameter) {
+            super("유효하지 않은 파라미터입니다: " + parameter, "INVALID_REVIEW_PARAMETER");
+        }
+    }
 }
 

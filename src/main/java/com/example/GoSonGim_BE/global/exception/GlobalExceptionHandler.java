@@ -60,6 +60,7 @@ public class GlobalExceptionHandler {
         
         // Review 도메인 예외
         ReviewExceptions.NoLearningHistoryException.class,
+        ReviewExceptions.InvalidQueryParameterException.class,
         
         // OpenAI 도메인 예외
         OpenAIExceptions.OpenAIServiceException.class,
@@ -189,6 +190,9 @@ public class GlobalExceptionHandler {
         // Review 도메인 예외
         if (e instanceof ReviewExceptions.NoLearningHistoryException) {
             return HttpStatus.NOT_FOUND;
+        }
+        if (e instanceof ReviewExceptions.InvalidQueryParameterException) {
+            return HttpStatus.BAD_REQUEST;
         }
         
         // OpenAI 도메인 예외

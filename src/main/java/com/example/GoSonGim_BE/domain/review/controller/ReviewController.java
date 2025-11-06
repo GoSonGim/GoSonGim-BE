@@ -1,15 +1,18 @@
 package com.example.GoSonGim_BE.domain.review.controller;
 
+import com.example.GoSonGim_BE.domain.review.dto.response.ReviewSituationsResponse;
 import com.example.GoSonGim_BE.domain.review.dto.response.ReviewWordsResponse;
 import com.example.GoSonGim_BE.domain.review.service.ReviewService;
 import com.example.GoSonGim_BE.global.constant.ApiVersion;
 import com.example.GoSonGim_BE.global.dto.ApiResult;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -35,6 +38,26 @@ public class ReviewController {
         Long userId = (Long) authentication.getPrincipal();
         ReviewWordsResponse result = reviewService.getRandomReviewWords(userId);
         ApiResult<ReviewWordsResponse> response = ApiResult.success(200, "복습 단어 조회 성공", result);
+        return ResponseEntity.ok(response);
+    }
+    
+    /**
+     * 상황극 복습 목록 조회
+     * 사용자의 학습 기록 중 상황극을 최신순 또는 오래된 순으로 조회합니다.
+     */
+    @Operation(summary = "상황극 복습 목록 조회", description = "사용자가 학습한 상황극을 최신 학습 기록 기준으로 조회합니다.")
+    @GetMapping("/situations")
+    public ResponseEntity<ApiResult<ReviewSituationsResponse>> getReviewSituations(
+            Authentication authentication,
+            @Parameter(description = "카테고리 (all, daily, purchase, medical, traffic, job, social, emergency)")
+            @RequestParam(defaultValue = "all") String category,
+            @Parameter(description = "정렬 기준 (latest, oldest)")
+            @RequestParam(defaultValue = "latest") String sort,
+            @RequestParam(defaultValue = "1") int page,
+            @RequestParam(defaultValue = "20") int size) {
+        Long userId = (Long) authentication.getPrincipal();
+        ReviewSituationsResponse result = reviewService.getReviewSituations(userId, category, sort, page, size);
+        ApiResult<ReviewSituationsResponse> response = ApiResult.success(200, "상황극 복습 목록 조회 성공", result);
         return ResponseEntity.ok(response);
     }
 }
