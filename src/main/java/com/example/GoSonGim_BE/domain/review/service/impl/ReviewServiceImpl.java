@@ -115,9 +115,11 @@ public class ReviewServiceImpl implements ReviewService {
             );
         
         // 평가 정보
+        Float rawScore = situationLog.getEvaluationScore();
+        Integer truncatedScore = rawScore != null ? rawScore.intValue() : null;
         ReviewSituationDetailResponse.EvaluationInfo evaluationInfo = 
             new ReviewSituationDetailResponse.EvaluationInfo(
-                situationLog.getEvaluationScore(),
+                truncatedScore,
                 situationLog.getEvaluationFeedback()
             );
         

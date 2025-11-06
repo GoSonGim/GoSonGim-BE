@@ -17,7 +17,7 @@ public record ReviewSituationDetailResponse(
     ) {}
     
     public record EvaluationInfo(
-        Float score,
+        Integer score,
         String feedback
     ) {}
     
