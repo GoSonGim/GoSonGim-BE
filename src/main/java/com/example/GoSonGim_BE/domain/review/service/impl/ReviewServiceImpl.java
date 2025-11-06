@@ -23,7 +23,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.net.URL;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -44,7 +43,7 @@ public class ReviewServiceImpl implements ReviewService {
     private static final int MAX_REVIEW_WORDS = 5;
     private static final int SAMPLE_SIZE_FOR_RANDOM = 200;
     private static final int MAX_PAGE_SIZE = 50;
-    private static final int AUDIO_URL_EXPIRATION_MINUTES = 60;
+    private static final int AUDIO_URL_EXPIRATION_SECONDS = 1800; // 30분
     
     @Override
     public ReviewWordsResponse getRandomReviewWords(Long userId) {
@@ -130,45 +129,58 @@ public class ReviewServiceImpl implements ReviewService {
         return new ReviewSituationDetailResponse(recordingId, situationInfo, evaluationInfo, conversation);
     }
     
+    /**
+     * 대화 내역 JSON을 파싱하고 오디오 URL을 포함한 대화 턴 리스트로 변환
+     */
     private List<ReviewSituationDetailResponse.ConversationTurn> parseConversationWithAudioUrls(String conversationJson) {
+        if (conversationJson == null || conversationJson.isBlank() || conversationJson.equals("[]")) {
+            throw new ReviewExceptions.InvalidConversationDataException("대화 내역이 비어있습니다.");
+        }
+        
         try {
-            if (conversationJson == null || conversationJson.isBlank() || conversationJson.equals("[]")) {
-                return new ArrayList<>();
-            }
-            
             TypeReference<List<Map<String, Object>>> typeRef = new TypeReference<>() {};
             List<Map<String, Object>> conversationList = objectMapper.readValue(conversationJson, typeRef);
             
             return conversationList.stream()
-                .map(turn -> {
-                    String question = (String) turn.get("question");
-                    String answerText = (String) turn.get("answer");
-                    String audioFileKey = (String) turn.get("audioFileKey");
-                    
-                    // 오디오 URL 생성
-                    String audioUrl = null;
-                    Integer audioExpiresIn = AUDIO_URL_EXPIRATION_MINUTES * 60; // 초 단위로 변환
-                    if (audioFileKey != null && !audioFileKey.isBlank()) {
-                        try {
-                            URL presignedUrl = s3Service.generateDownloadPresignedUrl(
-                                audioFileKey, 
-                                AUDIO_URL_EXPIRATION_MINUTES
-                            );
-                            audioUrl = presignedUrl.toString();
-                        } catch (Exception e) {
-                            log.warn("오디오 URL 생성 실패: fileKey={}", audioFileKey, e);
-                        }
-                    }
-                    
-                    ReviewSituationDetailResponse.Answer answer = 
-                        new ReviewSituationDetailResponse.Answer(answerText, audioUrl, audioExpiresIn);
-                    
-                    return new ReviewSituationDetailResponse.ConversationTurn(question, answer);
-                })
+                .map(this::mapToConversationTurn)
                 .toList();
         } catch (Exception e) {
-            log.error("대화 내역 파싱 실패: {}", conversationJson, e);
-            return new ArrayList<>();
+            throw new ReviewExceptions.InvalidConversationDataException("대화 내역을 불러올 수 없습니다.");
+        }
+    }
+    
+    /**
+     * 대화 턴 맵을 ConversationTurn DTO로 변환
+     */
+    private ReviewSituationDetailResponse.ConversationTurn mapToConversationTurn(Map<String, Object> turn) {
+        String question = (String) turn.get("question");
+        String answerText = (String) turn.get("answer");
+        String audioFileKey = (String) turn.get("audioFileKey");
+        
+        String audioUrl = generateAudioUrl(audioFileKey);
+        ReviewSituationDetailResponse.Answer answer = 
+            new ReviewSituationDetailResponse.Answer(answerText, audioUrl, AUDIO_URL_EXPIRATION_SECONDS);
+        
+        return new ReviewSituationDetailResponse.ConversationTurn(question, answer);
+    }
+    
+    /**
+     * 오디오 파일 키로부터 S3 presigned URL 생성
+     * @return presigned URL 또는 빈 문자열 (파일 키가 없거나 생성 실패 시)
+     */
+    private String generateAudioUrl(String audioFileKey) {
+        if (audioFileKey == null || audioFileKey.isBlank()) {
+            return "";
+        }
+        
+        try {
+            URL presignedUrl = s3Service.generateDownloadPresignedUrl(
+                audioFileKey, 
+                AUDIO_URL_EXPIRATION_SECONDS / 60 // 분 단위로 변환
+            );
+            return presignedUrl.toString();
+        } catch (Exception e) {
+            return "";
         }
     }
     

@@ -63,6 +63,7 @@ public class GlobalExceptionHandler {
         ReviewExceptions.InvalidQueryParameterException.class,
         ReviewExceptions.SituationLogNotFoundException.class,
         ReviewExceptions.SituationLogAccessDeniedException.class,
+        ReviewExceptions.InvalidConversationDataException.class,
         
         // OpenAI 도메인 예외
         OpenAIExceptions.OpenAIServiceException.class,
@@ -194,7 +195,8 @@ public class GlobalExceptionHandler {
             e instanceof ReviewExceptions.SituationLogNotFoundException) {
             return HttpStatus.NOT_FOUND;
         }
-        if (e instanceof ReviewExceptions.InvalidQueryParameterException) {
+        if (e instanceof ReviewExceptions.InvalidQueryParameterException ||
+            e instanceof ReviewExceptions.InvalidConversationDataException) {
             return HttpStatus.BAD_REQUEST;
         }
         if (e instanceof ReviewExceptions.SituationLogAccessDeniedException) {

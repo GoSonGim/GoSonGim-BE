@@ -42,5 +42,14 @@ public class ReviewExceptions {
             super("해당 기록에 접근할 권한이 없습니다: " + recordingId, "SITUATION_LOG_ACCESS_DENIED");
         }
     }
+    
+    /**
+     * 대화 내역 데이터가 유효하지 않은 예외
+     */
+    public static class InvalidConversationDataException extends BaseException {
+        public InvalidConversationDataException(String message) {
+            super(message, "INVALID_CONVERSATION_DATA");
+        }
+    }
 }
 
