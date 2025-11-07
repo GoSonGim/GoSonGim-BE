@@ -9,6 +9,7 @@ import org.springframework.stereotype.Repository;
 
 import java.time.LocalDate;
 import java.util.List;
+import org.springframework.data.domain.Slice;
 
 @Repository
 public interface KitStageLogRepository extends JpaRepository<KitStageLog, Long> {
@@ -130,4 +131,67 @@ public interface KitStageLogRepository extends JpaRepository<KitStageLog, Long> 
     List<String> findRandomDistinctWordsByUserId(@Param("userId") Long userId,
                                                  @Param("sampleSize") int sampleSize,
                                                  @Param("limit") int limit);
+
+    /**
+     * 전체 카테고리에서 사용자의 최신 조음 키트 학습 기록 조회 (카테고리 필터 없음)
+     */
+    @Query("""
+        SELECT ksl
+        FROM KitStageLog ksl
+        JOIN ksl.kitStage ks
+        JOIN ks.kit k
+        WHERE ksl.user.id = :userId
+          AND ksl.id = (
+              SELECT MAX(ksl2.id)
+              FROM KitStageLog ksl2
+              JOIN ksl2.kitStage ks2
+              WHERE ksl2.user.id = :userId
+                AND ks2.kit.id = k.id
+          )
+        """)
+    Slice<KitStageLog> findLatestKitLogsAllCategories(@Param("userId") Long userId,
+                                                       Pageable pageable);
+
+    /**
+     * 특정 카테고리에서 사용자의 최신 조음 키트 학습 기록 조회
+     */
+    @Query("""
+        SELECT ksl
+        FROM KitStageLog ksl
+        JOIN ksl.kitStage ks
+        JOIN ks.kit k
+        WHERE ksl.user.id = :userId
+          AND k.kitCategory.id = :categoryId
+          AND ksl.id = (
+              SELECT MAX(ksl2.id)
+              FROM KitStageLog ksl2
+              JOIN ksl2.kitStage ks2
+              WHERE ksl2.user.id = :userId
+                AND ks2.kit.id = k.id
+                AND ks2.kit.kitCategory.id = :categoryId
+          )
+        """)
+    Slice<KitStageLog> findLatestKitLogsByCategory(@Param("userId") Long userId,
+                                                    @Param("categoryId") Long categoryId,
+                                                    Pageable pageable);
+
+    /**
+     * 특정 키트의 각 단계별 최신 학습 기록 조회 (사용자별)
+     */
+    @Query("""
+        SELECT ksl
+        FROM KitStageLog ksl
+        JOIN ksl.kitStage ks
+        WHERE ksl.user.id = :userId
+          AND ks.kit.id = :kitId
+          AND ksl.id = (
+              SELECT MAX(ksl2.id)
+              FROM KitStageLog ksl2
+              WHERE ksl2.user.id = :userId
+                AND ksl2.kitStage.id = ks.id
+          )
+        ORDER BY ks.id ASC
+        """)
+    List<KitStageLog> findAllByUserIdAndKitId(@Param("userId") Long userId,
+                                               @Param("kitId") Long kitId);
 }

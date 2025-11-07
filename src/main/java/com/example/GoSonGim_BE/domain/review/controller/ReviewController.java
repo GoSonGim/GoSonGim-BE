@@ -1,5 +1,7 @@
 package com.example.GoSonGim_BE.domain.review.controller;
 
+import com.example.GoSonGim_BE.domain.review.dto.response.ReviewKitRecordsResponse;
+import com.example.GoSonGim_BE.domain.review.dto.response.ReviewKitsResponse;
 import com.example.GoSonGim_BE.domain.review.dto.response.ReviewSituationsResponse;
 import com.example.GoSonGim_BE.domain.review.dto.response.ReviewWordsResponse;
 import com.example.GoSonGim_BE.domain.review.service.ReviewService;
@@ -12,6 +14,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -58,6 +61,39 @@ public class ReviewController {
         Long userId = (Long) authentication.getPrincipal();
         ReviewSituationsResponse result = reviewService.getReviewSituations(userId, category, sort, page, size);
         ApiResult<ReviewSituationsResponse> response = ApiResult.success(200, "상황극 복습 목록 조회 성공", result);
+        return ResponseEntity.ok(response);
+    }
+
+    /**
+     * 조음 키트 복습 목록 조회
+     * 사용자의 학습 기록 중 조음 키트를 최신순 또는 오래된 순으로 조회합니다.
+     */
+    @Operation(summary = "조음 키트 복습 목록 조회", description = "사용자가 학습한 조음 키트를 최신 학습 기록 기준으로 조회합니다.")
+    @GetMapping("/kits")
+    public ResponseEntity<ApiResult<ReviewKitsResponse>> getReviewKits(
+            Authentication authentication,
+            @RequestParam(required = false) Long categoryId,
+            @RequestParam(defaultValue = "latest") String sort,
+            @RequestParam(defaultValue = "1") int page,
+            @RequestParam(defaultValue = "20") int size) {
+        Long userId = (Long) authentication.getPrincipal();
+        ReviewKitsResponse result = reviewService.getReviewKits(userId, categoryId, sort, page, size);
+        ApiResult<ReviewKitsResponse> response = ApiResult.success(200, "조음 키트 복습 목록 조회 성공", result);
+        return ResponseEntity.ok(response);
+    }
+
+    /**
+     * 조음 키트 복습 녹음 듣기
+     * 특정 키트의 모든 학습 녹음 기록을 조회합니다.
+     */
+    @Operation(summary = "조음 키트 복습 상세 조회", description = "특정 키트의 모든 학습 녹음 기록을 점수, 피드백과 함께 조회합니다.")
+    @GetMapping("/kits/{kitId}")
+    public ResponseEntity<ApiResult<ReviewKitRecordsResponse>> getKitRecords(
+            Authentication authentication,
+            @PathVariable Long kitId) {
+        Long userId = (Long) authentication.getPrincipal();
+        ReviewKitRecordsResponse result = reviewService.getKitRecords(userId, kitId);
+        ApiResult<ReviewKitRecordsResponse> response = ApiResult.success(200, "조음 키트 상세 조회 성공", result);
         return ResponseEntity.ok(response);
     }
 }
