@@ -2,6 +2,7 @@ package com.example.GoSonGim_BE.domain.review.service;
 
 import com.example.GoSonGim_BE.domain.review.dto.response.ReviewKitRecordsResponse;
 import com.example.GoSonGim_BE.domain.review.dto.response.ReviewKitsResponse;
+import com.example.GoSonGim_BE.domain.review.dto.response.ReviewSituationDetailResponse;
 import com.example.GoSonGim_BE.domain.review.dto.response.ReviewSituationsResponse;
 import com.example.GoSonGim_BE.domain.review.dto.response.ReviewWordsResponse;
 
@@ -50,5 +51,14 @@ public interface ReviewService {
      * @return 녹음 기록 목록 응답
      */
     ReviewKitRecordsResponse getKitRecords(Long userId, Long kitId);
+    
+    /**
+     * 상황극 복습 상세 조회
+     *
+     * @param userId 사용자 ID
+     * @param recordingId 학습 기록 ID
+     * @return 상황극 복습 상세 응답
+     */
+    ReviewSituationDetailResponse getReviewSituationDetail(Long userId, Long recordingId);
 }
 
