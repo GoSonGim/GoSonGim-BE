@@ -5,10 +5,13 @@ import com.example.GoSonGim_BE.domain.kit.entity.KitStageLog;
 import com.example.GoSonGim_BE.domain.kit.repository.KitCategoryRepository;
 import com.example.GoSonGim_BE.domain.kit.repository.KitRepository;
 import com.example.GoSonGim_BE.domain.kit.repository.KitStageLogRepository;
+import com.example.GoSonGim_BE.domain.review.dto.response.ReviewDailyItemResponse;
+import com.example.GoSonGim_BE.domain.review.dto.response.ReviewDailyResponse;
 import com.example.GoSonGim_BE.domain.review.dto.response.ReviewKitItemResponse;
 import com.example.GoSonGim_BE.domain.review.dto.response.ReviewKitRecordItemResponse;
 import com.example.GoSonGim_BE.domain.review.dto.response.ReviewKitRecordsResponse;
 import com.example.GoSonGim_BE.domain.review.dto.response.ReviewKitsResponse;
+import com.example.GoSonGim_BE.domain.review.dto.response.ReviewMonthlyResponse;
 import com.example.GoSonGim_BE.domain.review.dto.response.ReviewSituationDetailResponse;
 import com.example.GoSonGim_BE.domain.review.dto.response.ReviewSituationItemResponse;
 import com.example.GoSonGim_BE.domain.review.dto.response.ReviewSituationsResponse;
@@ -30,6 +33,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.net.URL;
+import java.sql.Date;
+import java.time.LocalDate;
+import java.time.YearMonth;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Map;
 
@@ -47,13 +54,13 @@ public class ReviewServiceImpl implements ReviewService {
     private final KitRepository kitRepository;
     private final KitCategoryRepository kitCategoryRepository;
     private final S3Service s3Service;
-    private final S3Service s3Service;
     private final ObjectMapper objectMapper;
 
     private static final int MAX_REVIEW_WORDS = 5;
     private static final int SAMPLE_SIZE_FOR_RANDOM = 200;
     private static final int MAX_PAGE_SIZE = 50;
     private static final int PRESIGNED_URL_EXPIRATION_MINUTES = 60;
+    private static final int AUDIO_URL_EXPIRATION_SECONDS = 1800; // 30분
     
     @Override
     public ReviewWordsResponse getRandomReviewWords(Long userId) {
@@ -274,6 +281,60 @@ public class ReviewServiceImpl implements ReviewService {
             return Sort.by(Sort.Order.asc("createdAt"), Sort.Order.asc("id"));
         }
         throw new ReviewExceptions.InvalidQueryParameterException("sort");
+    }
+    
+    @Override
+    public ReviewMonthlyResponse getMonthlyReview(Long userId, YearMonth month) {
+        // 해당 월에 학습이 있었던 날짜 목록 조회 (java.sql.Date로 반환)
+        List<Date> sqlDates = situationLogRepository.findDistinctLearningDatesByMonth(
+            userId, 
+            month.getYear(), 
+            month.getMonthValue()
+        );
+        
+        // java.sql.Date를 LocalDate로 변환
+        List<LocalDate> learningDates = sqlDates.stream()
+            .map(Date::toLocalDate)
+            .toList();
+        
+        // 날짜(day)만 추출하여 정수 리스트로 변환
+        List<Integer> days = learningDates.stream()
+            .map(LocalDate::getDayOfMonth)
+            .toList();
+        
+        // month를 yyyy-MM 형식 문자열로 변환
+        String monthString = month.format(DateTimeFormatter.ofPattern("yyyy-MM"));
+        
+        return new ReviewMonthlyResponse(monthString, days);
+    }
+    
+    @Override
+    public ReviewDailyResponse getDailyReview(Long userId, LocalDate date) {
+        // 해당 날짜에 학습한 조음 키트 목록 조회 (중복 허용, 최신순)
+        List<KitStageLog> kitLogs = kitStageLogRepository.findByUserIdAndDate(userId, date);
+        
+        // 해당 날짜에 학습한 상황극 목록 조회 (중복 허용, 최신순)
+        List<SituationLog> situationLogs = situationLogRepository.findByUserIdAndDate(userId, date);
+        
+        // 조음 키트를 ReviewDailyItemResponse로 변환
+        List<ReviewDailyItemResponse> kitItems = kitLogs.stream()
+            .map(ReviewDailyItemResponse::fromKit)
+            .toList();
+        
+        // 상황극을 ReviewDailyItemResponse로 변환
+        List<ReviewDailyItemResponse> situationItems = situationLogs.stream()
+            .map(ReviewDailyItemResponse::fromSituation)
+            .toList();
+        
+        // 두 리스트를 합치고 최신순으로 정렬
+        List<ReviewDailyItemResponse> allItems = new java.util.ArrayList<>();
+        allItems.addAll(kitItems);
+        allItems.addAll(situationItems);
+        
+        // createdAt 기준으로 최신순 정렬
+        allItems.sort((a, b) -> b.createdAt().compareTo(a.createdAt()));
+        
+        return ReviewDailyResponse.of(allItems);
     }
 }
 

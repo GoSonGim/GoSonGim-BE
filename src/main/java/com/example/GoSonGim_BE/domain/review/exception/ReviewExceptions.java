@@ -40,6 +40,8 @@ public class ReviewExceptions {
     public static class CategoryNotFoundException extends BaseException {
         public CategoryNotFoundException() {
             super("카테고리를 찾을 수 없습니다.", "CATEGORY_NOT_FOUND");
+        }
+    }
     
     /**
      * 상황극 학습 기록을 찾을 수 없는 예외

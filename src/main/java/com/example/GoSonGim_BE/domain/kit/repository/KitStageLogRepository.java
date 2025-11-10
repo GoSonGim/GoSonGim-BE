@@ -194,4 +194,22 @@ public interface KitStageLogRepository extends JpaRepository<KitStageLog, Long> 
         """)
     List<KitStageLog> findAllByUserIdAndKitId(@Param("userId") Long userId,
                                                @Param("kitId") Long kitId);
+    
+    /**
+     * 특정 날짜에 사용자가 학습한 조음 키트 목록 조회 (중복 허용)
+     * 
+     * @param userId 사용자 ID
+     * @param date 조회할 날짜
+     * @return 학습 기록 목록
+     */
+    @Query("""
+        SELECT ksl
+        FROM KitStageLog ksl
+        JOIN ksl.kitStage ks
+        JOIN ks.kit k
+        WHERE ksl.user.id = :userId
+          AND DATE(ksl.createdAt) = :date
+        """)
+    List<KitStageLog> findByUserIdAndDate(@Param("userId") Long userId,
+                                           @Param("date") LocalDate date);
 }
