@@ -9,6 +9,7 @@ import com.example.GoSonGim_BE.domain.review.dto.response.ReviewKitItemResponse;
 import com.example.GoSonGim_BE.domain.review.dto.response.ReviewKitRecordItemResponse;
 import com.example.GoSonGim_BE.domain.review.dto.response.ReviewKitRecordsResponse;
 import com.example.GoSonGim_BE.domain.review.dto.response.ReviewKitsResponse;
+import com.example.GoSonGim_BE.domain.review.dto.response.ReviewMonthlyResponse;
 import com.example.GoSonGim_BE.domain.review.dto.response.ReviewSituationDetailResponse;
 import com.example.GoSonGim_BE.domain.review.dto.response.ReviewSituationItemResponse;
 import com.example.GoSonGim_BE.domain.review.dto.response.ReviewSituationsResponse;
@@ -30,6 +31,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.net.URL;
+import java.sql.Date;
+import java.time.LocalDate;
+import java.time.YearMonth;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Map;
 
@@ -47,13 +52,13 @@ public class ReviewServiceImpl implements ReviewService {
     private final KitRepository kitRepository;
     private final KitCategoryRepository kitCategoryRepository;
     private final S3Service s3Service;
-    private final S3Service s3Service;
     private final ObjectMapper objectMapper;
 
     private static final int MAX_REVIEW_WORDS = 5;
     private static final int SAMPLE_SIZE_FOR_RANDOM = 200;
     private static final int MAX_PAGE_SIZE = 50;
     private static final int PRESIGNED_URL_EXPIRATION_MINUTES = 60;
+    private static final int AUDIO_URL_EXPIRATION_SECONDS = 1800; // 30분
     
     @Override
     public ReviewWordsResponse getRandomReviewWords(Long userId) {
@@ -274,6 +279,31 @@ public class ReviewServiceImpl implements ReviewService {
             return Sort.by(Sort.Order.asc("createdAt"), Sort.Order.asc("id"));
         }
         throw new ReviewExceptions.InvalidQueryParameterException("sort");
+    }
+    
+    @Override
+    public ReviewMonthlyResponse getMonthlyReview(Long userId, YearMonth month) {
+        // 해당 월에 학습이 있었던 날짜 목록 조회 (java.sql.Date로 반환)
+        List<Date> sqlDates = situationLogRepository.findDistinctLearningDatesByMonth(
+            userId, 
+            month.getYear(), 
+            month.getMonthValue()
+        );
+        
+        // java.sql.Date를 LocalDate로 변환
+        List<LocalDate> learningDates = sqlDates.stream()
+            .map(Date::toLocalDate)
+            .toList();
+        
+        // 날짜(day)만 추출하여 정수 리스트로 변환
+        List<Integer> days = learningDates.stream()
+            .map(LocalDate::getDayOfMonth)
+            .toList();
+        
+        // month를 yyyy-MM 형식 문자열로 변환
+        String monthString = month.format(DateTimeFormatter.ofPattern("yyyy-MM"));
+        
+        return new ReviewMonthlyResponse(monthString, days);
     }
 }
 

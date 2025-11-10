@@ -2,6 +2,7 @@ package com.example.GoSonGim_BE.domain.review.controller;
 
 import com.example.GoSonGim_BE.domain.review.dto.response.ReviewKitRecordsResponse;
 import com.example.GoSonGim_BE.domain.review.dto.response.ReviewKitsResponse;
+import com.example.GoSonGim_BE.domain.review.dto.response.ReviewMonthlyResponse;
 import com.example.GoSonGim_BE.domain.review.dto.response.ReviewSituationDetailResponse;
 import com.example.GoSonGim_BE.domain.review.dto.response.ReviewSituationsResponse;
 import com.example.GoSonGim_BE.domain.review.dto.response.ReviewWordsResponse;
@@ -12,6 +13,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -19,6 +21,8 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+
+import java.time.YearMonth;
 
 /**
  * 복습 API 컨트롤러
@@ -111,6 +115,22 @@ public class ReviewController {
         Long userId = (Long) authentication.getPrincipal();
         ReviewSituationDetailResponse result = reviewService.getReviewSituationDetail(userId, recordingId);
         ApiResult<ReviewSituationDetailResponse> response = ApiResult.success(200, "상황극 복습 상세 조회 성공", result);
+        return ResponseEntity.ok(response);
+    }
+    
+    /**
+     * 월별 학습 기록 조회
+     * 지정한 월에 학습이 있었던 날짜 목록을 조회합니다.
+     */
+    @Operation(summary = "월별 학습 기록 조회", description = "지정한 월에 학습이 있었던 날짜 목록을 조회합니다.")
+    @GetMapping
+    public ResponseEntity<ApiResult<ReviewMonthlyResponse>> getMonthlyReview(
+            Authentication authentication,
+            @Parameter(description = "조회할 월 (yyyy-MM 형식)", required = true)
+            @RequestParam @DateTimeFormat(pattern = "yyyy-MM") YearMonth month) {
+        Long userId = (Long) authentication.getPrincipal();
+        ReviewMonthlyResponse result = reviewService.getMonthlyReview(userId, month);
+        ApiResult<ReviewMonthlyResponse> response = ApiResult.success(200, "월별 학습 기록 조회 성공", result);
         return ResponseEntity.ok(response);
     }
 }

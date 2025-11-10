@@ -2,9 +2,12 @@ package com.example.GoSonGim_BE.domain.review.service;
 
 import com.example.GoSonGim_BE.domain.review.dto.response.ReviewKitRecordsResponse;
 import com.example.GoSonGim_BE.domain.review.dto.response.ReviewKitsResponse;
+import com.example.GoSonGim_BE.domain.review.dto.response.ReviewMonthlyResponse;
 import com.example.GoSonGim_BE.domain.review.dto.response.ReviewSituationDetailResponse;
 import com.example.GoSonGim_BE.domain.review.dto.response.ReviewSituationsResponse;
 import com.example.GoSonGim_BE.domain.review.dto.response.ReviewWordsResponse;
+
+import java.time.YearMonth;
 
 /**
  * 복습 서비스 인터페이스
@@ -60,5 +63,15 @@ public interface ReviewService {
      * @return 상황극 복습 상세 응답
      */
     ReviewSituationDetailResponse getReviewSituationDetail(Long userId, Long recordingId);
+    
+    /**
+     * 월별 학습 기록 조회
+     * 지정한 월에 학습이 있었던 날짜 목록을 반환합니다.
+     *
+     * @param userId 사용자 ID
+     * @param month 조회할 월
+     * @return 월별 학습 기록 응답
+     */
+    ReviewMonthlyResponse getMonthlyReview(Long userId, YearMonth month);
 }
 
