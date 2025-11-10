@@ -5,6 +5,8 @@ import com.example.GoSonGim_BE.domain.kit.entity.KitStageLog;
 import com.example.GoSonGim_BE.domain.kit.repository.KitCategoryRepository;
 import com.example.GoSonGim_BE.domain.kit.repository.KitRepository;
 import com.example.GoSonGim_BE.domain.kit.repository.KitStageLogRepository;
+import com.example.GoSonGim_BE.domain.review.dto.response.ReviewDailyItemResponse;
+import com.example.GoSonGim_BE.domain.review.dto.response.ReviewDailyResponse;
 import com.example.GoSonGim_BE.domain.review.dto.response.ReviewKitItemResponse;
 import com.example.GoSonGim_BE.domain.review.dto.response.ReviewKitRecordItemResponse;
 import com.example.GoSonGim_BE.domain.review.dto.response.ReviewKitRecordsResponse;
@@ -304,6 +306,35 @@ public class ReviewServiceImpl implements ReviewService {
         String monthString = month.format(DateTimeFormatter.ofPattern("yyyy-MM"));
         
         return new ReviewMonthlyResponse(monthString, days);
+    }
+    
+    @Override
+    public ReviewDailyResponse getDailyReview(Long userId, LocalDate date) {
+        // 해당 날짜에 학습한 조음 키트 목록 조회 (중복 허용, 최신순)
+        List<KitStageLog> kitLogs = kitStageLogRepository.findByUserIdAndDate(userId, date);
+        
+        // 해당 날짜에 학습한 상황극 목록 조회 (중복 허용, 최신순)
+        List<SituationLog> situationLogs = situationLogRepository.findByUserIdAndDate(userId, date);
+        
+        // 조음 키트를 ReviewDailyItemResponse로 변환
+        List<ReviewDailyItemResponse> kitItems = kitLogs.stream()
+            .map(ReviewDailyItemResponse::fromKit)
+            .toList();
+        
+        // 상황극을 ReviewDailyItemResponse로 변환
+        List<ReviewDailyItemResponse> situationItems = situationLogs.stream()
+            .map(ReviewDailyItemResponse::fromSituation)
+            .toList();
+        
+        // 두 리스트를 합치고 최신순으로 정렬
+        List<ReviewDailyItemResponse> allItems = new java.util.ArrayList<>();
+        allItems.addAll(kitItems);
+        allItems.addAll(situationItems);
+        
+        // createdAt 기준으로 최신순 정렬
+        allItems.sort((a, b) -> b.createdAt().compareTo(a.createdAt()));
+        
+        return ReviewDailyResponse.of(allItems);
     }
 }
 

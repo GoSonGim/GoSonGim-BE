@@ -1,5 +1,6 @@
 package com.example.GoSonGim_BE.domain.review.controller;
 
+import com.example.GoSonGim_BE.domain.review.dto.response.ReviewDailyResponse;
 import com.example.GoSonGim_BE.domain.review.dto.response.ReviewKitRecordsResponse;
 import com.example.GoSonGim_BE.domain.review.dto.response.ReviewKitsResponse;
 import com.example.GoSonGim_BE.domain.review.dto.response.ReviewMonthlyResponse;
@@ -22,6 +23,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.time.LocalDate;
 import java.time.YearMonth;
 
 /**
@@ -123,7 +125,7 @@ public class ReviewController {
      * 지정한 월에 학습이 있었던 날짜 목록을 조회합니다.
      */
     @Operation(summary = "월별 학습 기록 조회", description = "지정한 월에 학습이 있었던 날짜 목록을 조회합니다.")
-    @GetMapping
+    @GetMapping("/monthly")
     public ResponseEntity<ApiResult<ReviewMonthlyResponse>> getMonthlyReview(
             Authentication authentication,
             @Parameter(description = "조회할 월 (yyyy-MM 형식)", required = true)
@@ -131,6 +133,22 @@ public class ReviewController {
         Long userId = (Long) authentication.getPrincipal();
         ReviewMonthlyResponse result = reviewService.getMonthlyReview(userId, month);
         ApiResult<ReviewMonthlyResponse> response = ApiResult.success(200, "월별 학습 기록 조회 성공", result);
+        return ResponseEntity.ok(response);
+    }
+    
+    /**
+     * 일별 학습 기록 조회
+     * 선택한 날짜에 학습한 조음 키트를 최신순으로 조회합니다.
+     */
+    @Operation(summary = "일별 학습 기록 조회", description = "선택한 날짜에 학습한 조음 키트를 최신순으로 조회합니다. 같은 키트를 여러 번 학습했을 경우 중복해서 반환합니다.")
+    @GetMapping("/daily")
+    public ResponseEntity<ApiResult<ReviewDailyResponse>> getDailyReview(
+            Authentication authentication,
+            @Parameter(description = "조회할 날짜 (yyyy-MM-dd 형식)", required = true)
+            @RequestParam @DateTimeFormat(pattern = "yyyy-MM-dd") LocalDate date) {
+        Long userId = (Long) authentication.getPrincipal();
+        ReviewDailyResponse result = reviewService.getDailyReview(userId, date);
+        ApiResult<ReviewDailyResponse> response = ApiResult.success(200, "일별 학습 기록 조회 성공", result);
         return ResponseEntity.ok(response);
     }
 }

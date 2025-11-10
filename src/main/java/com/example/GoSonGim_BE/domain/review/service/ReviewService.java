@@ -1,5 +1,6 @@
 package com.example.GoSonGim_BE.domain.review.service;
 
+import com.example.GoSonGim_BE.domain.review.dto.response.ReviewDailyResponse;
 import com.example.GoSonGim_BE.domain.review.dto.response.ReviewKitRecordsResponse;
 import com.example.GoSonGim_BE.domain.review.dto.response.ReviewKitsResponse;
 import com.example.GoSonGim_BE.domain.review.dto.response.ReviewMonthlyResponse;
@@ -7,6 +8,7 @@ import com.example.GoSonGim_BE.domain.review.dto.response.ReviewSituationDetailR
 import com.example.GoSonGim_BE.domain.review.dto.response.ReviewSituationsResponse;
 import com.example.GoSonGim_BE.domain.review.dto.response.ReviewWordsResponse;
 
+import java.time.LocalDate;
 import java.time.YearMonth;
 
 /**
@@ -73,5 +75,15 @@ public interface ReviewService {
      * @return 월별 학습 기록 응답
      */
     ReviewMonthlyResponse getMonthlyReview(Long userId, YearMonth month);
+    
+    /**
+     * 일별 학습 기록 조회
+     * 선택한 날짜에 학습한 조음 키트를 최신순으로 반환합니다.
+     *
+     * @param userId 사용자 ID
+     * @param date 조회할 날짜
+     * @return 일별 학습 기록 응답
+     */
+    ReviewDailyResponse getDailyReview(Long userId, LocalDate date);
 }
 
