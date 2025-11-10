@@ -2,6 +2,7 @@ package com.example.GoSonGim_BE.global.exception;
 
 import com.example.GoSonGim_BE.domain.auth.exception.AuthExceptions;
 import com.example.GoSonGim_BE.domain.openai.exception.OpenAIExceptions;
+import com.example.GoSonGim_BE.domain.review.exception.ReviewExceptions;
 import com.example.GoSonGim_BE.domain.situation.exception.SituationExceptions;
 import com.example.GoSonGim_BE.domain.users.exception.UserExceptions;
 import com.example.GoSonGim_BE.global.dto.ApiErrorResponse;
@@ -56,6 +57,13 @@ public class GlobalExceptionHandler {
         SituationExceptions.SessionNotActiveException.class,
         SituationExceptions.SessionInvalidException.class,
         SituationExceptions.SpeechToTextException.class,
+        
+        // Review 도메인 예외
+        ReviewExceptions.NoLearningHistoryException.class,
+        ReviewExceptions.InvalidQueryParameterException.class,
+        ReviewExceptions.SituationLogNotFoundException.class,
+        ReviewExceptions.SituationLogAccessDeniedException.class,
+        ReviewExceptions.InvalidConversationDataException.class,
         
         // OpenAI 도메인 예외
         OpenAIExceptions.OpenAIServiceException.class,
@@ -180,6 +188,19 @@ public class GlobalExceptionHandler {
         }
         if (e instanceof SituationExceptions.SpeechToTextException) {
             return HttpStatus.INTERNAL_SERVER_ERROR;
+        }
+        
+        // Review 도메인 예외
+        if (e instanceof ReviewExceptions.NoLearningHistoryException ||
+            e instanceof ReviewExceptions.SituationLogNotFoundException) {
+            return HttpStatus.NOT_FOUND;
+        }
+        if (e instanceof ReviewExceptions.InvalidQueryParameterException ||
+            e instanceof ReviewExceptions.InvalidConversationDataException) {
+            return HttpStatus.BAD_REQUEST;
+        }
+        if (e instanceof ReviewExceptions.SituationLogAccessDeniedException) {
+            return HttpStatus.FORBIDDEN;
         }
         
         // OpenAI 도메인 예외
