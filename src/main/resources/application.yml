@@ -16,6 +16,12 @@ spring:
       fail-on-empty-beans: false
     time-zone: Asia/Seoul
 
+  servlet:
+    multipart:
+      max-file-size: 10MB
+      max-request-size: 10MB
+      enabled: true
+
 server:
   base-uri: ${SERVER_URI}
   port: 8080
