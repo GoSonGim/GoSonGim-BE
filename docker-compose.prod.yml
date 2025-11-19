@@ -7,11 +7,30 @@ services:
     container_name: gosongim-app
     env_file:
       - .env
+    environment:
+      REDIS_HOST: redis  # Docker 네트워크 내부 서비스명 사용
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: ${REDIS_PASSWORD:-}  # 비밀번호가 없으면 빈 문자열
     ports:
       - "8080:8080"
+    depends_on:
+      - redis
     networks:
       - gosongim-network
     restart: unless-stopped
+
+  # Redis 서버
+  redis:
+    image: redis:7-alpine
+    container_name: gosongim-redis
+    ports:
+      - "6379:6379"
+    networks:
+      - gosongim-network
+    command: redis-server --appendonly yes  # 데이터 영속성
+    restart: unless-stopped
+    volumes:
+      - redis-data:/data
 
   # Nginx
   nginx:
@@ -34,4 +53,8 @@ services:
 networks:
   gosongim-network:
     driver: bridge
+
+volumes:
+  redis-data:
+
 
