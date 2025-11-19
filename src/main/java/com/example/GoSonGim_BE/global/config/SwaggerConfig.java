@@ -30,7 +30,8 @@ public class SwaggerConfig {
         return new OpenAPI()
                 .info(apiInfo())
                 .addSecurityItem(securityRequirement)
-                .components(components);
+                .components(components)
+                .servers(List.of(new Server().url("https://api.ttobaki.app").description("Production Server")));
     }
 
     private Info apiInfo() {
