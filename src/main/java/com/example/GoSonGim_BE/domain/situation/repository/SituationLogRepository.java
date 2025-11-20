@@ -80,6 +80,65 @@ public interface SituationLogRepository extends JpaRepository<SituationLog, Long
                                             @Param("date") LocalDate date);
     
     /**
+     * 사용자의 총 성공 횟수 조회 (상황극)
+     * 
+     * @param userId 사용자 ID
+     * @return 총 성공 횟수
+     */
+    @Query("SELECT COUNT(sl.id) FROM SituationLog sl " +
+           "WHERE sl.user.id = :userId AND sl.isSuccess = true")
+    Long countTotalSuccessfulByUserId(@Param("userId") Long userId);
+    
+    /**
+     * 최근 5일간 일별 성공한 학습 개수 조회 (상황극, 중복 허용)
+     * 
+     * @param userId 사용자 ID
+     * @param startDate 시작일 (5일 전)
+     * @param endDate 종료일 (오늘)
+     * @return 일자별 성공 개수 리스트
+     */
+    @Query("SELECT DATE(sl.createdAt) as date, COUNT(sl.id) as count " +
+           "FROM SituationLog sl " +
+           "WHERE sl.user.id = :userId " +
+           "AND sl.isSuccess = true " +
+           "AND DATE(sl.createdAt) BETWEEN :startDate AND :endDate " +
+           "GROUP BY DATE(sl.createdAt) " +
+           "ORDER BY DATE(sl.createdAt)")
+    List<Object[]> countDailySuccessfulLearning(@Param("userId") Long userId,
+                                                 @Param("startDate") LocalDate startDate,
+                                                 @Param("endDate") LocalDate endDate);
+
+    /**
+     * 사용자의 모든 성공한 상황극 conversation 조회 (전체 기간)
+     * 
+     * @param userId 사용자 ID
+     * @return conversation 리스트
+     */
+    @Query("SELECT sl.conversation " +
+           "FROM SituationLog sl " +
+           "WHERE sl.user.id = :userId " +
+           "AND sl.isSuccess = true")
+    List<String> findAllSuccessfulConversations(@Param("userId") Long userId);
+
+    /**
+     * 최근 5일간 성공한 상황극 로그 조회 (conversation 파싱용)
+     * 
+     * @param userId 사용자 ID
+     * @param startDate 시작일 (5일 전)
+     * @param endDate 종료일 (오늘)
+     * @return 날짜와 conversation을 포함한 로그 리스트
+     */
+    @Query("SELECT DATE(sl.createdAt) as date, sl.conversation " +
+           "FROM SituationLog sl " +
+           "WHERE sl.user.id = :userId " +
+           "AND sl.isSuccess = true " +
+           "AND DATE(sl.createdAt) BETWEEN :startDate AND :endDate " +
+           "ORDER BY DATE(sl.createdAt)")
+    List<Object[]> findSuccessfulLogsWithConversation(@Param("userId") Long userId,
+                                                       @Param("startDate") LocalDate startDate,
+                                                       @Param("endDate") LocalDate endDate);
+
+    /**
      * 특정 월에 사용자가 학습한 날짜 목록 조회 (중복 제거)
      * 상황극과 조음 키트를 모두 조회
      * 

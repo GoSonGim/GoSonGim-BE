@@ -28,6 +28,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
 @Service
 @RequiredArgsConstructor
 @Transactional
@@ -143,9 +146,40 @@ public class UserServiceImpl implements UserService {
             LocalDate date = today.minusDays(i);
             kitRecentDayCounts.add(dailyCountMap.getOrDefault(date, 0));
         }
-        
-        return UserStudyStatisticsResponse.of(wordCount, situationCount, kitCount, 
-                                              kitTotalSuccessCount, kitRecentDayCounts);
+
+        // Situation 그래프 데이터 - 총 성공 횟수 (전체 기간)
+        List<String> allSituationConversations = situationLogRepository.findAllSuccessfulConversations(userId);
+        ObjectMapper objectMapper = new ObjectMapper();
+        Long situationTotalSuccessCount = 0L;
+
+        for (String conversationJson : allSituationConversations) {
+            situationTotalSuccessCount += parseMaxTurnIndex(conversationJson, objectMapper);
+        }
+
+        // Situation 최근 5일간 일별 데이터 조회
+        List<Object[]> situationDailyResults = situationLogRepository.findSuccessfulLogsWithConversation(userId, fiveDaysAgo, today);
+
+        // 날짜별 카운트를 Map으로 변환
+        Map<LocalDate, Integer> situationDailyCountMap = new HashMap<>();
+        for (Object[] result : situationDailyResults) {
+            java.sql.Date sqlDate = (java.sql.Date) result[0];
+            LocalDate date = sqlDate.toLocalDate();
+            String conversationJson = (String) result[1];
+
+            int maxTurnIndex = parseMaxTurnIndex(conversationJson, objectMapper);
+            situationDailyCountMap.merge(date, maxTurnIndex, Integer::sum);
+        }
+
+        // 5일간의 데이터 리스트 생성 (없는 날은 0으로)
+        List<Integer> situationRecentDayCounts = new ArrayList<>();
+        for (int i = 4; i >= 0; i--) {
+            LocalDate date = today.minusDays(i);
+            situationRecentDayCounts.add(situationDailyCountMap.getOrDefault(date, 0));
+        }
+
+        return UserStudyStatisticsResponse.of(wordCount, situationCount, kitCount,
+                                              kitTotalSuccessCount, kitRecentDayCounts,
+                                              situationTotalSuccessCount, situationRecentDayCounts);
     }
     
     @Override
@@ -198,5 +232,35 @@ public class UserServiceImpl implements UserService {
         boolean hasNext = (long) (pageNumber + 1) * pageSize < totalDays;
         
         return DailyWordsResponse.of(items, totalWordCount, page, pageSize, hasNext);
+    }
+
+    /**
+     * conversation JSON에서 turnIndex의 최대값을 추출
+     * 
+     * @param conversationJson conversation JSON 문자열
+     * @param objectMapper JSON 파서
+     * @return turnIndex의 최대값
+     */
+    private int parseMaxTurnIndex(String conversationJson, ObjectMapper objectMapper) {
+        if (conversationJson == null || conversationJson.isBlank()) {
+            return 0;
+        }
+        
+        try {
+            JsonNode conversations = objectMapper.readTree(conversationJson);
+            int maxTurnIndex = 0;
+            
+            for (JsonNode conv : conversations) {
+                if (conv.has("turnIndex")) {
+                    int turnIndex = conv.get("turnIndex").asInt();
+                    maxTurnIndex = Math.max(maxTurnIndex, turnIndex);
+                }
+            }
+            
+            return maxTurnIndex;
+        } catch (Exception e) {
+            // JSON 파싱 실패 시 0 반환
+            return 0;
+        }
     }
 }
