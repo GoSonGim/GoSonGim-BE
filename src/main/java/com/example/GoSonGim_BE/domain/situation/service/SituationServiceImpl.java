@@ -197,7 +197,7 @@ public class SituationServiceImpl implements SituationService {
         conversationHistory.set(currentTurnIndex, updatedTurn);
         
         int nextTurnIndex = session.getCurrentStep() + 1;
-        boolean shouldEnd = !evaluation.isSuccess() || nextTurnIndex > 5;
+        boolean shouldEnd = nextTurnIndex > 5; // 5턴 초과 시 자동 종료, isSuccess와 무관하게 계속 진행 가능
         
         String nextQuestion = null;
         SituationSessionReplyResponse.FinalSummary finalSummary = null;
