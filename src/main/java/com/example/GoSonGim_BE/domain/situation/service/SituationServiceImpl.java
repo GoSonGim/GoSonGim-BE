@@ -172,12 +172,12 @@ public class SituationServiceImpl implements SituationService {
                 "대화 내역이 비어있습니다. 세션을 다시 시작해주세요.");
         }
         
-        // turnIndex 검증: currentStep(다시하기) 또는 currentStep + 1(다음 질문)만 허용
+        // turnIndex 검증: currentStep(다시하기) 또는 이전 턴만 허용
         int currentStep = session.getCurrentStep();
-        if (request.turnIndex() != currentStep && request.turnIndex() != currentStep + 1) {
+        if (request.turnIndex() < 1 || request.turnIndex() > currentStep) {
             throw new SituationExceptions.SessionInvalidException(
-                String.format("턴 인덱스는 %d(다시하기) 또는 %d(다음 질문)이어야 합니다. (요청된 값: %d)", 
-                    currentStep, currentStep + 1, request.turnIndex()));
+                String.format("턴 인덱스는 1 이상 %d 이하여야 합니다. (요청된 값: %d)", 
+                    currentStep, request.turnIndex()));
         }
         
         // conversationHistory에서 해당 turnIndex를 가진 turn 찾기
@@ -221,24 +221,23 @@ public class SituationServiceImpl implements SituationService {
         updatedTurn.put("evaluation", evaluationMap);
         conversationHistory.set(targetTurnIndexInList, updatedTurn);
         
-        boolean isRetry = request.turnIndex() == currentStep;
+        // 다시하기 여부 확인: turnIndex < currentStep이면 이전 턴 다시하기
+        boolean isRetry = request.turnIndex() < currentStep;
         int nextTurnIndex;
         String nextQuestion = null;
         SituationSessionReplyResponse.FinalSummary finalSummary = null;
         boolean shouldEnd = false;
         
         if (isRetry) {
-            // 다시하기: 현재 turn (currentStep)을 다시 제출한 경우
-            // currentStep은 변경하지 않음
+            // 이전 턴 다시하기: currentStep은 유지
             nextTurnIndex = currentStep;
-            // 다음 질문 생성
-            int nextQuestionTurnIndex = currentStep + 1;
+            int nextQuestionTurnIndex = request.turnIndex() + 1;
             
-            // 기존 다음 질문이 있으면 제거 (다시 발화한 답변 기준으로 새로 생성하기 위해)
+            // 다시하기한 턴 이후의 모든 턴 제거
             conversationHistory.removeIf(turn -> {
                 Object turnIndexObj = turn.get("turnIndex");
                 return turnIndexObj instanceof Number && 
-                       ((Number) turnIndexObj).intValue() == nextQuestionTurnIndex;
+                       ((Number) turnIndexObj).intValue() > request.turnIndex();
             });
             
             // 새로운 답변 기준으로 다음 질문 생성
@@ -250,9 +249,16 @@ public class SituationServiceImpl implements SituationService {
             nextTurn.put("evaluation", null);
             conversationHistory.add(nextTurn);
         } else {
-            // 다음 질문으로 진행: turnIndex == currentStep + 1
+            // 현재 턴 진행: currentStep과 같은 turnIndex
             nextTurnIndex = currentStep + 1;
             shouldEnd = nextTurnIndex > 5; // 5턴 초과 시 자동 종료
+            
+            // 기존 다음 질문이 있으면 제거 (새로운 답변 기준으로 재생성하기 위해)
+            conversationHistory.removeIf(turn -> {
+                Object turnIndexObj = turn.get("turnIndex");
+                return turnIndexObj instanceof Number && 
+                       ((Number) turnIndexObj).intValue() == nextTurnIndex;
+            });
             
             if (shouldEnd) {
                 // 세션 종료 시 최종 요약 생성 및 SituationLog 저장
@@ -277,7 +283,7 @@ public class SituationServiceImpl implements SituationService {
                 // 연속 학습일 업데이트
                 userService.updateUserStreak(userId);
             } else {
-                // 다음 질문 생성
+                // 새로운 답변 기준으로 다음 질문 생성
                 nextQuestion = generateNextQuestion(situation, conversationHistory, nextTurnIndex);
                 Map<String, Object> nextTurn = new HashMap<>();
                 nextTurn.put("turnIndex", nextTurnIndex);
