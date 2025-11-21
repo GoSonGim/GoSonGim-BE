@@ -172,67 +172,120 @@ public class SituationServiceImpl implements SituationService {
                 "대화 내역이 비어있습니다. 세션을 다시 시작해주세요.");
         }
         
-        Map<String, Object> currentTurn = conversationHistory.get(conversationHistory.size() - 1);
-        String currentQuestion = (String) currentTurn.get("question");
+        // turnIndex 검증: currentStep(다시하기) 또는 currentStep + 1(다음 질문)만 허용
+        int currentStep = session.getCurrentStep();
+        if (request.turnIndex() != currentStep && request.turnIndex() != currentStep + 1) {
+            throw new SituationExceptions.SessionInvalidException(
+                String.format("턴 인덱스는 %d(다시하기) 또는 %d(다음 질문)이어야 합니다. (요청된 값: %d)", 
+                    currentStep, currentStep + 1, request.turnIndex()));
+        }
         
+        // conversationHistory에서 해당 turnIndex를 가진 turn 찾기
+        Map<String, Object> targetTurn = null;
+        int targetTurnIndexInList = -1;
+        for (int i = 0; i < conversationHistory.size(); i++) {
+            Map<String, Object> turn = conversationHistory.get(i);
+            Object turnIndexObj = turn.get("turnIndex");
+            if (turnIndexObj instanceof Number && ((Number) turnIndexObj).intValue() == request.turnIndex()) {
+                targetTurn = turn;
+                targetTurnIndexInList = i;
+                break;
+            }
+        }
+        
+        if (targetTurn == null) {
+            throw new SituationExceptions.SessionInvalidException(
+                String.format("턴 인덱스 %d를 찾을 수 없습니다.", request.turnIndex()));
+        }
+        
+        String currentQuestion = (String) targetTurn.get("question");
         if (currentQuestion == null || currentQuestion.isBlank()) {
             throw new SituationExceptions.SessionInvalidException("현재 질문을 찾을 수 없습니다.");
         }
         
+        // 답변 평가
         SituationSessionReplyResponse.Evaluation evaluation = evaluateAnswer(
-            situation, currentQuestion, request.answer(), session.getCurrentStep());
+            situation, currentQuestion, request.answer(), request.turnIndex());
         
         Map<String, Object> evaluationMap = new HashMap<>();
         evaluationMap.put("isSuccess", evaluation.isSuccess());
         evaluationMap.put("score", evaluation.score());
         evaluationMap.put("feedback", evaluation.feedback());
         
-        int currentTurnIndex = conversationHistory.size() - 1;
+        // turn 업데이트
         Map<String, Object> updatedTurn = new HashMap<>();
-        updatedTurn.put("turnIndex", session.getCurrentStep());
+        updatedTurn.put("turnIndex", request.turnIndex());
         updatedTurn.put("question", currentQuestion);
         updatedTurn.put("answer", request.answer());
         updatedTurn.put("audioFileKey", request.audioFileKey()); // 오디오 파일 키 저장
         updatedTurn.put("evaluation", evaluationMap);
-        conversationHistory.set(currentTurnIndex, updatedTurn);
+        conversationHistory.set(targetTurnIndexInList, updatedTurn);
         
-        int nextTurnIndex = session.getCurrentStep() + 1;
-        boolean shouldEnd = nextTurnIndex > 5; // 5턴 초과 시 자동 종료, isSuccess와 무관하게 계속 진행 가능
-        
+        boolean isRetry = request.turnIndex() == currentStep;
+        int nextTurnIndex;
         String nextQuestion = null;
         SituationSessionReplyResponse.FinalSummary finalSummary = null;
+        boolean shouldEnd = false;
         
-        if (shouldEnd) {
-            // 세션 종료 시 최종 요약 생성 및 SituationLog 저장
-            finalSummary = generateFinalSummary(situation, conversationHistory, evaluation.isSuccess());
+        if (isRetry) {
+            // 다시하기: 현재 turn (currentStep)을 다시 제출한 경우
+            // currentStep은 변경하지 않음
+            nextTurnIndex = currentStep;
+            // 다음 질문 생성
+            int nextQuestionTurnIndex = currentStep + 1;
             
-            // User 조회
-            User user = userRepository.findById(userId)
-                .orElseThrow(() -> new UserExceptions.UserNotFoundException(userId));
+            // 기존 다음 질문이 있으면 제거 (다시 발화한 답변 기준으로 새로 생성하기 위해)
+            conversationHistory.removeIf(turn -> {
+                Object turnIndexObj = turn.get("turnIndex");
+                return turnIndexObj instanceof Number && 
+                       ((Number) turnIndexObj).intValue() == nextQuestionTurnIndex;
+            });
             
-            // SituationLog 저장
-            // conversationHistory에 이미 모든 turn의 audioFileKey가 포함되어 있음
-            SituationLog situationLog = SituationLog.builder()
-                .situation(situation)
-                .user(user)
-                .conversation(serializeConversationHistoryWithEvaluation(conversationHistory))
-                .isSuccess(finalSummary.averageScore() >= 50.0f)
-                .evaluationScore(finalSummary.averageScore())
-                .evaluationFeedback(finalSummary.finalFeedback())
-                .build();
-            
-            situationLogRepository.save(situationLog);
-
-            // 연속 학습일 업데이트
-            userService.updateUserStreak(userId);
-        } else {
-            nextQuestion = generateNextQuestion(situation, conversationHistory, nextTurnIndex);
+            // 새로운 답변 기준으로 다음 질문 생성
+            nextQuestion = generateNextQuestion(situation, conversationHistory, nextQuestionTurnIndex);
             Map<String, Object> nextTurn = new HashMap<>();
-            nextTurn.put("turnIndex", nextTurnIndex);
+            nextTurn.put("turnIndex", nextQuestionTurnIndex);
             nextTurn.put("question", nextQuestion);
             nextTurn.put("answer", null);
             nextTurn.put("evaluation", null);
             conversationHistory.add(nextTurn);
+        } else {
+            // 다음 질문으로 진행: turnIndex == currentStep + 1
+            nextTurnIndex = currentStep + 1;
+            shouldEnd = nextTurnIndex > 5; // 5턴 초과 시 자동 종료
+            
+            if (shouldEnd) {
+                // 세션 종료 시 최종 요약 생성 및 SituationLog 저장
+                finalSummary = generateFinalSummary(situation, conversationHistory, evaluation.isSuccess());
+                
+                // User 조회
+                User user = userRepository.findById(userId)
+                    .orElseThrow(() -> new UserExceptions.UserNotFoundException(userId));
+                
+                // SituationLog 저장
+                SituationLog situationLog = SituationLog.builder()
+                    .situation(situation)
+                    .user(user)
+                    .conversation(serializeConversationHistoryWithEvaluation(conversationHistory))
+                    .isSuccess(finalSummary.averageScore() >= 50.0f)
+                    .evaluationScore(finalSummary.averageScore())
+                    .evaluationFeedback(finalSummary.finalFeedback())
+                    .build();
+                
+                situationLogRepository.save(situationLog);
+
+                // 연속 학습일 업데이트
+                userService.updateUserStreak(userId);
+            } else {
+                // 다음 질문 생성
+                nextQuestion = generateNextQuestion(situation, conversationHistory, nextTurnIndex);
+                Map<String, Object> nextTurn = new HashMap<>();
+                nextTurn.put("turnIndex", nextTurnIndex);
+                nextTurn.put("question", nextQuestion);
+                nextTurn.put("answer", null);
+                nextTurn.put("evaluation", null);
+                conversationHistory.add(nextTurn);
+            }
         }
         
         SituationSession updatedSession = SituationSession.builder()
