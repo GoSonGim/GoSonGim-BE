@@ -32,12 +32,14 @@ public record UserStudyStatisticsResponse(
             Long situationCount,
             Long kitCount,
             Long kitTotalSuccessCount,
-            List<Integer> kitRecentDayCounts) {
+            List<Integer> kitRecentDayCounts,
+            Long situationTotalSuccessCount,
+            List<Integer> situationRecentDayCounts) {
         return new UserStudyStatisticsResponse(
             new Stats(wordCount, situationCount, kitCount),
             new Graph(
                 new KitGraph(kitTotalSuccessCount, kitRecentDayCounts),
-                new SituationGraph(0L, List.of(0, 0, 0, 0, 0))  // TODO 상황극은 conversation 형식 확정 후 구현
+                new SituationGraph(situationTotalSuccessCount, situationRecentDayCounts)
             )
         );
     }
