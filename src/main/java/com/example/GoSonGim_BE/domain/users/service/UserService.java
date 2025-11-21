@@ -1,5 +1,6 @@
 package com.example.GoSonGim_BE.domain.users.service;
 
+import com.example.GoSonGim_BE.domain.users.dto.response.ContinuousDaysResponse;
 import com.example.GoSonGim_BE.domain.users.dto.response.DailyWordsResponse;
 import com.example.GoSonGim_BE.domain.users.dto.response.NicknameChangeResponse;
 import com.example.GoSonGim_BE.domain.users.dto.response.UserProfileResponse;
@@ -37,6 +38,11 @@ public interface UserService {
      * 사용자 레벨 업데이트
      */
     void updateUserLevel(Long userId);
+
+    /**
+     * 연속 학습일 업데이트
+     */
+    void updateUserStreak(Long userId);
     
     /**
      * 사용자 학습 통계 조회
@@ -47,4 +53,12 @@ public interface UserService {
      * 일별 학습 단어 목록 조회
      */
     DailyWordsResponse getDailyWords(Long userId, int page, int size);
+
+    /**
+     * 연속 학습일 조회
+     * - 어제 기준 연속 학습일 계산
+     * - 오늘 학습 시 오늘 포함
+     * - 어제 기준 연속 끊기면 0으로 계산
+     */
+    ContinuousDaysResponse getContinuousDays(Long userId);
 }

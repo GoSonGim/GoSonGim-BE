@@ -1,6 +1,7 @@
 package com.example.GoSonGim_BE.domain.users.controller;
 
 import com.example.GoSonGim_BE.domain.users.dto.request.NicknameChangeRequest;
+import com.example.GoSonGim_BE.domain.users.dto.response.ContinuousDaysResponse;
 import com.example.GoSonGim_BE.domain.users.dto.response.DailyWordsResponse;
 import com.example.GoSonGim_BE.domain.users.dto.response.NicknameChangeResponse;
 import com.example.GoSonGim_BE.domain.users.dto.response.UserProfileResponse;
@@ -67,5 +68,13 @@ public class UserController {
         Long userId = (Long) authentication.getPrincipal();
         UserWithdrawalResponse response = userService.withdrawUser(userId);
         return ResponseEntity.ok(ApiResult.success(200, "탈퇴가 접수되었습니다. 30일 후 계정과 데이터가 영구 삭제됩니다.", response));
+    }
+
+    @Operation(summary = "연속 학습일 조회")
+    @GetMapping("/streak-days")
+    public ResponseEntity<ApiResult<ContinuousDaysResponse>> getContinuousDays(Authentication authentication) {
+        Long userId = (Long) authentication.getPrincipal();
+        ContinuousDaysResponse response = userService.getContinuousDays(userId);
+        return ResponseEntity.ok(ApiResult.success(200, "연속 학습일 조회에 성공하였습니다.", response));
     }
 }
