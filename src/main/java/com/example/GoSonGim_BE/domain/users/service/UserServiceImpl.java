@@ -6,6 +6,7 @@ import org.springframework.transaction.annotation.Transactional;
 import com.example.GoSonGim_BE.domain.auth.repository.RefreshTokenRepository;
 import com.example.GoSonGim_BE.domain.kit.repository.KitStageLogRepository;
 import com.example.GoSonGim_BE.domain.situation.repository.SituationLogRepository;
+import com.example.GoSonGim_BE.domain.users.dto.response.ContinuousDaysResponse;
 import com.example.GoSonGim_BE.domain.users.dto.response.DailyWordsResponse;
 import com.example.GoSonGim_BE.domain.users.dto.response.NicknameChangeResponse;
 import com.example.GoSonGim_BE.domain.users.dto.response.UserProfileResponse;
@@ -97,9 +98,18 @@ public class UserServiceImpl implements UserService {
     public void updateUserLevel(Long userId) {
         User user = userRepository.findById(userId)
             .orElseThrow(() -> new UserExceptions.UserNotFoundException(userId));
-        
+
         Long uniqueSuccessfulKits = kitStageLogRepository.countDistinctSuccessfulKitsByUserId(userId);
         user.calculateAndUpdateLevel(uniqueSuccessfulKits);
+        userRepository.save(user);
+    }
+
+    @Override
+    public void updateUserStreak(Long userId) {
+        User user = userRepository.findById(userId)
+            .orElseThrow(() -> new UserExceptions.UserNotFoundException(userId));
+
+        user.updateStreak(LocalDate.now());
         userRepository.save(user);
     }
     
@@ -198,5 +208,31 @@ public class UserServiceImpl implements UserService {
         boolean hasNext = (long) (pageNumber + 1) * pageSize < totalDays;
         
         return DailyWordsResponse.of(items, totalWordCount, page, pageSize, hasNext);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public ContinuousDaysResponse getContinuousDays(Long userId) {
+        User user = userRepository.findById(userId)
+            .orElseThrow(() -> new UserExceptions.UserNotFoundException(userId));
+
+        LocalDate today = LocalDate.now();
+        LocalDate yesterday = today.minusDays(1);
+        LocalDate lastActivity = user.getLastActivityDate();
+
+        // 학습 기록이 없는 경우
+        if (lastActivity == null) {
+            return ContinuousDaysResponse.of(0, false);
+        }
+
+        boolean learnedToday = today.equals(lastActivity);
+        boolean learnedYesterday = yesterday.equals(lastActivity);
+
+        // 어제도 오늘도 학습 안 함 → 연속 끊김
+        if (!learnedToday && !learnedYesterday) {
+            return ContinuousDaysResponse.of(0, false);
+        }
+
+        return ContinuousDaysResponse.of(user.getStreakDays(), learnedToday);
     }
 }

@@ -35,6 +35,7 @@ import com.example.GoSonGim_BE.domain.situation.repository.SituationRepository;
 import com.example.GoSonGim_BE.domain.users.entity.User;
 import com.example.GoSonGim_BE.domain.users.exception.UserExceptions;
 import com.example.GoSonGim_BE.domain.users.repository.UserRepository;
+import com.example.GoSonGim_BE.domain.users.service.UserService;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -51,6 +52,7 @@ public class SituationServiceImpl implements SituationService {
     private final SessionStorage sessionStorage;
     private final SituationLogRepository situationLogRepository;
     private final UserRepository userRepository;
+    private final UserService userService;
     private final OpenAIService openAIService;
     private final PronunciationAssessmentService pronunciationAssessmentService;
     private final ObjectMapper objectMapper;
@@ -220,6 +222,9 @@ public class SituationServiceImpl implements SituationService {
                 .build();
             
             situationLogRepository.save(situationLog);
+
+            // 연속 학습일 업데이트
+            userService.updateUserStreak(userId);
         } else {
             nextQuestion = generateNextQuestion(situation, conversationHistory, nextTurnIndex);
             Map<String, Object> nextTurn = new HashMap<>();
@@ -370,7 +375,10 @@ public class SituationServiceImpl implements SituationService {
             .build();
         
         SituationLog savedLog = situationLogRepository.save(situationLog);
-        
+
+        // 연속 학습일 업데이트
+        userService.updateUserStreak(userId);
+
         SituationSession completedSession = SituationSession.builder()
             .sessionId(session.getSessionId())
             .userId(session.getUserId())

@@ -152,7 +152,10 @@ public class KitServiceImpl implements KitService {
                         .build();
                     
                     kitStageLogRepository.save(log);
-                    
+
+                    // 연속 학습일 업데이트
+                    userService.updateUserStreak(userId);
+
                     // 학습 성공 시 레벨 업데이트
                     if (isSuccess) {
                         userService.updateUserLevel(userId);
@@ -269,13 +272,16 @@ public class KitServiceImpl implements KitService {
             .build();
 
         kitStageLogRepository.save(log);
-        
+
+        // 연속 학습일 업데이트
+        userService.updateUserStreak(userId);
+
         // 학습 성공 시 레벨 업데이트
         if (request.isSuccess()) {
             userService.updateUserLevel(userId);
         }
     }
-    
+
     @Override
     public DiagnosticResponse diagnosePronunciation(MultipartFile audioFile, String targetText) {
         try (InputStream audioStream = audioFile.getInputStream()) {

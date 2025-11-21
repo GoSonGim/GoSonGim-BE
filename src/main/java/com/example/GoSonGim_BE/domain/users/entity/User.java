@@ -165,9 +165,30 @@ public class User extends BaseEntity {
     }
     
     /**
+     * 연속 학습일 업데이트
+     * 학습 완료 시 호출하여 streak 갱신
+     *
+     * @param activityDate 학습 활동 일자
+     */
+    public void updateStreak(LocalDate activityDate) {
+        if (this.lastActivityDate == null) {
+            this.streakDays = 1;
+        } else if (activityDate.equals(this.lastActivityDate)) {
+            // 같은 날 중복 학습 - 변경 없음
+            return;
+        } else if (activityDate.equals(this.lastActivityDate.plusDays(1))) {
+            this.streakDays++;
+        } else {
+            // 연속 끊김
+            this.streakDays = 1;
+        }
+        this.lastActivityDate = activityDate;
+    }
+
+    /**
      * 레벨 계산 및 업데이트
      * 성공한 고유 키트 2개당 1레벨 업
-     * 
+     *
      * @param uniqueSuccessfulKits 성공한 고유 키트 수
      */
     public void calculateAndUpdateLevel(long uniqueSuccessfulKits) {
