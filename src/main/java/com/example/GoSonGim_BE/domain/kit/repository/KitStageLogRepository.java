@@ -177,21 +177,25 @@ public interface KitStageLogRepository extends JpaRepository<KitStageLog, Long> 
 
     /**
      * 특정 키트의 각 단계별 최신 학습 기록 조회 (사용자별)
+     * kitId 1, 2, 3: 각 stage당 최신 1개씩
+     * kitId 4 이상: 각 stage당 최신 3개씩
      */
-    @Query("""
-        SELECT ksl
-        FROM KitStageLog ksl
-        JOIN ksl.kitStage ks
-        WHERE ksl.user.id = :userId
-          AND ks.kit.id = :kitId
-          AND ksl.id = (
-              SELECT MAX(ksl2.id)
-              FROM KitStageLog ksl2
-              WHERE ksl2.user.id = :userId
-                AND ksl2.kitStage.id = ks.id
-          )
-        ORDER BY ks.id ASC
-        """)
+    @Query(value = """
+        SELECT ksl.*
+        FROM (
+            SELECT ksl.*,
+                   ROW_NUMBER() OVER (
+                       PARTITION BY ksl.kit_stage_id
+                       ORDER BY ksl.created_at DESC, ksl.id DESC
+                   ) as rn
+            FROM kit_stage_log ksl
+            INNER JOIN kit_stage ks ON ksl.kit_stage_id = ks.id
+            WHERE ksl.user_id = :userId
+              AND ks.kit_id = :kitId
+        ) ksl
+        WHERE ksl.rn <= CASE WHEN :kitId IN (1, 2, 3) THEN 1 ELSE 3 END
+        ORDER BY ksl.created_at DESC
+        """, nativeQuery = true)
     List<KitStageLog> findAllByUserIdAndKitId(@Param("userId") Long userId,
                                                @Param("kitId") Long kitId);
     
