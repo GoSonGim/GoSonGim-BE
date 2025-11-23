@@ -37,6 +37,7 @@ import java.sql.Date;
 import java.time.LocalDate;
 import java.time.YearMonth;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -316,10 +317,8 @@ public class ReviewServiceImpl implements ReviewService {
         // 해당 날짜에 학습한 상황극 목록 조회 (중복 허용, 최신순)
         List<SituationLog> situationLogs = situationLogRepository.findByUserIdAndDate(userId, date);
         
-        // 조음 키트를 ReviewDailyItemResponse로 변환
-        List<ReviewDailyItemResponse> kitItems = kitLogs.stream()
-            .map(ReviewDailyItemResponse::fromKit)
-            .toList();
+        // 조음 키트: 같은 학습 세션 내의 반복 평가는 하나만 표시, 다른 학습 세션은 모두 표시
+        List<ReviewDailyItemResponse> kitItems = deduplicateKitLogsBySession(kitLogs);
         
         // 상황극을 ReviewDailyItemResponse로 변환
         List<ReviewDailyItemResponse> situationItems = situationLogs.stream()
@@ -327,7 +326,7 @@ public class ReviewServiceImpl implements ReviewService {
             .toList();
         
         // 두 리스트를 합치고 최신순으로 정렬
-        List<ReviewDailyItemResponse> allItems = new java.util.ArrayList<>();
+        List<ReviewDailyItemResponse> allItems = new ArrayList<>();
         allItems.addAll(kitItems);
         allItems.addAll(situationItems);
         
@@ -335,6 +334,57 @@ public class ReviewServiceImpl implements ReviewService {
         allItems.sort((a, b) -> b.createdAt().compareTo(a.createdAt()));
         
         return ReviewDailyResponse.of(allItems);
+    }
+    
+    /**
+     * 조음 키트 로그를 학습 세션별로 중복 제거
+     * kitId 1, 2, 3: 단계가 1개이므로 그대로 표시
+     * kitId 4 이상: 같은 kit_stage_id에 대해 3번씩 평가하므로, 각 kit_stage_id의 첫 번째만 표시
+     */
+    private List<ReviewDailyItemResponse> deduplicateKitLogsBySession(List<KitStageLog> kitLogs) {
+        // createdAt 기준으로 최신순 정렬
+        List<KitStageLog> sortedLogs = kitLogs.stream()
+            .sorted((a, b) -> b.getCreatedAt().compareTo(a.getCreatedAt()))
+            .toList();
+        
+        List<KitStageLog> deduplicatedLogs = new ArrayList<>();
+        final int REPEAT_COUNT = 3; // kitId 4 이상일 때 각 stage당 반복 횟수
+        
+        for (int i = 0; i < sortedLogs.size(); i++) {
+            KitStageLog currentLog = sortedLogs.get(i);
+            Long currentKitId = currentLog.getKitStage().getKit().getId();
+            
+            // kitId가 1, 2, 3인 경우: 반복 평가가 없으므로 그대로 추가
+            if (currentKitId <= 3) {
+                deduplicatedLogs.add(currentLog);
+                continue;
+            }
+            
+            // kitId 4 이상: 같은 kit_stage_id에 대해 무조건 3개씩 들어오므로
+            // 첫 번째만 추가하고 다음 2개는 건너뛰기
+            Long currentKitStageId = currentLog.getKitStage().getId();
+            
+            // 다음 2개가 같은 kit_stage_id인지 확인
+            boolean shouldSkipNext = false;
+            if (i + 1 < sortedLogs.size() && i + 2 < sortedLogs.size()) {
+                Long nextKitStageId1 = sortedLogs.get(i + 1).getKitStage().getId();
+                Long nextKitStageId2 = sortedLogs.get(i + 2).getKitStage().getId();
+                
+                if (currentKitStageId.equals(nextKitStageId1) && currentKitStageId.equals(nextKitStageId2)) {
+                    shouldSkipNext = true;
+                }
+            }
+            
+            deduplicatedLogs.add(currentLog);
+            
+            if (shouldSkipNext) {
+                i += REPEAT_COUNT - 1; // 다음 2개는 건너뛰기
+            }
+        }
+        
+        return deduplicatedLogs.stream()
+            .map(ReviewDailyItemResponse::fromKit)
+            .toList();
     }
 }
 
