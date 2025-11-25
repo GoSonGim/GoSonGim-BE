@@ -177,6 +177,67 @@ public class ReviewServiceImpl implements ReviewService {
         return ReviewKitRecordsResponse.of(responseKitId, kitName, records);
     }
 
+    @Override
+    public ReviewKitRecordsResponse getKitLogRecord(Long userId, Long kitStageLogId) {
+        // 기준 로그 조회 및 권한 검증
+        KitStageLog baseLog = kitStageLogRepository.findById(kitStageLogId)
+            .orElseThrow(() -> new ReviewExceptions.KitLogNotFoundException(kitStageLogId));
+
+        if (!baseLog.getUser().getId().equals(userId)) {
+            throw new ReviewExceptions.KitLogAccessDeniedException(kitStageLogId);
+        }
+
+        // 키트 정보 추출
+        Long kitId = baseLog.getKitStage().getKit().getId();
+        String kitName = baseLog.getKitStage().getKit().getKitName();
+
+        // kitId 1,2,3: 한 번의 학습 = 1개 로그
+        // kitId 4 이상: 한 번의 학습 = 3개 로그
+        List<KitStageLog> sessionLogs;
+        if (kitId <= 3) {
+            // kit 1,2,3: baseLog 하나만 반환
+            sessionLogs = List.of(baseLog);
+        } else {
+            // kit 4 이상: 기준 로그 기준으로 같은 학습 세션의 3개 로그 조회
+            sessionLogs = kitStageLogRepository.findTop3ByUserAndKitStageAndCreatedAtBefore(
+                userId,
+                baseLog.getKitStage().getId(),
+                baseLog.getCreatedAt()
+            );
+
+            if (sessionLogs.isEmpty()) {
+                throw new ReviewExceptions.NoLearningHistoryException();
+            }
+        }
+
+        // 각 로그를 응답 DTO로 변환
+        List<ReviewKitRecordItemResponse> records = sessionLogs.stream()
+            .map(log -> {
+                String audioUrl = null;
+                if (log.getAudioFileKey() != null && !log.getAudioFileKey().isBlank()) {
+                    audioUrl = s3Service.generateDownloadPresignedUrl(
+                        log.getAudioFileKey(),
+                        PRESIGNED_URL_EXPIRATION_MINUTES
+                    ).toString();
+                }
+
+                return new ReviewKitRecordItemResponse(
+                    log.getId(),
+                    log.getKitStage().getId(),
+                    log.getKitStage().getKitStageName(),
+                    log.getEvaluationScore(),
+                    log.getEvaluationFeedback(),
+                    log.getIsSuccess(),
+                    log.getTargetWord(),
+                    audioUrl,
+                    log.getCreatedAt()
+                );
+            })
+            .toList();
+
+        return ReviewKitRecordsResponse.of(kitId, kitName, records);
+    }
+
     private SituationCategory parseCategory(String category) {
         try {
             return SituationCategory.from(category);

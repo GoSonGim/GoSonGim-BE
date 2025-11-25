@@ -69,5 +69,23 @@ public class ReviewExceptions {
             super(message, "INVALID_CONVERSATION_DATA");
         }
     }
+    
+    /**
+     * 조음 키트 학습 로그를 찾을 수 없는 예외
+     */
+    public static class KitLogNotFoundException extends BaseException {
+        public KitLogNotFoundException(Long kitStageLogId) {
+            super("조음 키트 학습 기록을 찾을 수 없습니다: " + kitStageLogId, "KIT_LOG_NOT_FOUND");
+        }
+    }
+    
+    /**
+     * 조음 키트 학습 로그 접근 권한 없음 예외
+     */
+    public static class KitLogAccessDeniedException extends BaseException {
+        public KitLogAccessDeniedException(Long kitStageLogId) {
+            super("해당 기록에 접근할 권한이 없습니다: " + kitStageLogId, "KIT_LOG_ACCESS_DENIED");
+        }
+    }
 }
 
