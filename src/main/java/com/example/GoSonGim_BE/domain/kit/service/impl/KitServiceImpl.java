@@ -177,7 +177,7 @@ public class KitServiceImpl implements KitService {
                     individualResults.add(new EvaluateResponse.IndividualResult(
                         kitStageId,
                         targetWord,
-                        "평가 실패: " + e.getMessage(),
+                        "평가에 실패했습니다. " + e.getMessage(),
                         new EvaluateResponse.PronunciationScore(0.0, 0.0, 0.0, 0.0),
                         0.0,
                         false
