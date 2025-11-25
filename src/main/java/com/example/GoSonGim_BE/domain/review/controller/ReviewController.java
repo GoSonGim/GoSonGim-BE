@@ -105,6 +105,22 @@ public class ReviewController {
     }
     
     /**
+     * 조음 키트 학습 로그 상세 조회
+     * 특정 학습 기록 ID를 기준으로 같은 학습 세션의 로그를 조회합니다.
+     */
+    @Operation(summary = "조음 키트 학습 로그 상세 조회", description = "특정 학습 기록의 상세 내용을 조회합니다. 일별 학습 조회에서 받은 recordingId로 조회하며, 같은 학습 세션의 모든 로그를 반환합니다.")
+    @GetMapping("/kits/logs/{kitStageLogId}")
+    public ResponseEntity<ApiResult<ReviewKitRecordsResponse>> getKitLogRecord(
+            Authentication authentication,
+            @Parameter(description = "키트 스테이지 로그 ID")
+            @PathVariable Long kitStageLogId) {
+        Long userId = (Long) authentication.getPrincipal();
+        ReviewKitRecordsResponse result = reviewService.getKitLogRecord(userId, kitStageLogId);
+        ApiResult<ReviewKitRecordsResponse> response = ApiResult.success(200, "조음 키트 로그 상세 조회 성공", result);
+        return ResponseEntity.ok(response);
+    }
+    
+    /**
      * 상황극 복습 상세 조회
      * 특정 상황극 학습 기록의 상세 내용(대화 내역, 평가, 오디오)을 조회합니다.
      */
