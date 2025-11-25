@@ -1,7 +1,6 @@
 package com.example.GoSonGim_BE.domain.review.service;
 
 import com.example.GoSonGim_BE.domain.review.dto.response.ReviewDailyResponse;
-import com.example.GoSonGim_BE.domain.review.dto.response.ReviewKitRecordItemResponse;
 import com.example.GoSonGim_BE.domain.review.dto.response.ReviewKitRecordsResponse;
 import com.example.GoSonGim_BE.domain.review.dto.response.ReviewKitsResponse;
 import com.example.GoSonGim_BE.domain.review.dto.response.ReviewMonthlyResponse;
@@ -59,13 +58,13 @@ public interface ReviewService {
     ReviewKitRecordsResponse getKitRecords(Long userId, Long kitId);
     
     /**
-     * 특정 조음 키트 로그 상세 조회
+     * 특정 조음 키트 로그 기준으로 같은 학습 세션의 모든 로그 조회
      *
      * @param userId 사용자 ID
      * @param kitStageLogId 키트 스테이지 로그 ID
-     * @return 단일 로그 상세 응답
+     * @return 같은 학습 세션의 모든 녹음 기록 응답
      */
-    ReviewKitRecordItemResponse getKitLogRecord(Long userId, Long kitStageLogId);
+    ReviewKitRecordsResponse getKitLogRecord(Long userId, Long kitStageLogId);
     
     /**
      * 상황극 복습 상세 조회
