@@ -216,4 +216,29 @@ public interface KitStageLogRepository extends JpaRepository<KitStageLog, Long> 
         """)
     List<KitStageLog> findByUserIdAndDate(@Param("userId") Long userId,
                                            @Param("date") LocalDate date);
+
+    /**
+     * 기준 로그 기준으로 같은 학습 세션의 3개 로그 조회
+     * - 같은 userId, 같은 kitStageId에서
+     * - createdAt <= 기준 시간인 것 중 최신 3개를 반환
+     * 
+     * @param userId 사용자 ID
+     * @param kitStageId 키트 스테이지 ID
+     * @param baseCreatedAt 기준 로그의 생성 시간
+     * @return 같은 학습 세션의 최신 3개 로그 (시간 내림차순)
+     */
+    @Query("""
+        SELECT ksl
+        FROM KitStageLog ksl
+        WHERE ksl.user.id = :userId
+          AND ksl.kitStage.id = :kitStageId
+          AND ksl.createdAt <= :baseCreatedAt
+        ORDER BY ksl.createdAt DESC, ksl.id DESC
+        LIMIT 3
+        """)
+    List<KitStageLog> findTop3ByUserAndKitStageAndCreatedAtBefore(
+        @Param("userId") Long userId,
+        @Param("kitStageId") Long kitStageId,
+        @Param("baseCreatedAt") java.time.LocalDateTime baseCreatedAt
+    );
 }
