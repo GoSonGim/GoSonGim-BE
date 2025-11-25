@@ -197,18 +197,42 @@ public class PronunciationAssessmentServiceImpl implements PronunciationAssessme
     private PronunciationAssessmentResponse parseAzureRestResponse(String responseBody, String targetWord) throws Exception {
         ObjectMapper objectMapper = new ObjectMapper();
         Map<String, Object> responseMap = objectMapper.readValue(responseBody, Map.class);
-        
+
         // NBest 결과에서 첫 번째 결과 추출
         @SuppressWarnings("unchecked")
         java.util.List<Map<String, Object>> nBest = (java.util.List<Map<String, Object>>) responseMap.get("NBest");
-        
+
         if (nBest == null || nBest.isEmpty()) {
-            throw new RuntimeException("Azure REST API 응답에 NBest 결과가 없습니다");
+            // Azure 응답 로깅 (디버깅용)
+            log.error("[Azure REST] NBest 결과 없음. 전체 응답: {}", responseBody);
+
+            // RecognitionStatus 확인하여 구체적인 에러 메시지 생성
+            String recognitionStatus = (String) responseMap.get("RecognitionStatus");
+            log.error("[Azure REST] RecognitionStatus: {}", recognitionStatus);
+
+            String errorMessage;
+            if ("InitialSilenceTimeout".equals(recognitionStatus)) {
+                errorMessage = "오디오에 음성이 감지되지 않았습니다. 녹음이 제대로 되었는지 확인해주세요.";
+            } else if ("NoMatch".equals(recognitionStatus)) {
+                errorMessage = "음성이 인식되지 않았습니다. 오디오 품질을 확인하거나 더 명확하게 발음해주세요.";
+            } else if ("BabbleTimeout".equals(recognitionStatus)) {
+                errorMessage = "배경 소음이 너무 많습니다. 조용한 환경에서 다시 시도해주세요.";
+            } else if ("Error".equals(recognitionStatus)) {
+                errorMessage = "Azure 음성 인식 중 오류가 발생했습니다. 오디오 형식을 확인해주세요.";
+            } else {
+                errorMessage = String.format("음성 인식에 실패했습니다. (상태: %s)", recognitionStatus);
+            }
+
+            throw new RuntimeException(errorMessage);
         }
-        
         Map<String, Object> bestResult = nBest.get(0);
-        String recognizedText = (String) bestResult.get("Display");
-        
+
+        // Lexical 사용 (구두점 없는 원시 텍스트)
+        String recognizedText = (String) bestResult.get("Lexical");
+        if (recognizedText == null || recognizedText.trim().isEmpty()) {
+            recognizedText = "";  // 인식 실패 시 빈 문자열
+        }
+
         // 발음 평가 점수는 NBest[0]에 직접 포함되어 있음
         Double accuracyScore = getDoubleValue(bestResult, "AccuracyScore");
         Double fluencyScore = getDoubleValue(bestResult, "FluencyScore");
