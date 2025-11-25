@@ -58,6 +58,15 @@ public interface ReviewService {
     ReviewKitRecordsResponse getKitRecords(Long userId, Long kitId);
     
     /**
+     * 특정 조음 키트 로그 기준으로 같은 학습 세션의 모든 로그 조회
+     *
+     * @param userId 사용자 ID
+     * @param kitStageLogId 키트 스테이지 로그 ID
+     * @return 같은 학습 세션의 모든 녹음 기록 응답
+     */
+    ReviewKitRecordsResponse getKitLogRecord(Long userId, Long kitStageLogId);
+    
+    /**
      * 상황극 복습 상세 조회
      *
      * @param userId 사용자 ID
