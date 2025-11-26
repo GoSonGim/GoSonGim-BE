@@ -194,7 +194,7 @@ public interface KitStageLogRepository extends JpaRepository<KitStageLog, Long> 
               AND ks.kit_id = :kitId
         ) ksl
         WHERE ksl.rn <= CASE WHEN :kitId IN (1, 2, 3) THEN 1 ELSE 3 END
-        ORDER BY ksl.created_at DESC
+        ORDER BY ksl.created_at ASC
         """, nativeQuery = true)
     List<KitStageLog> findAllByUserIdAndKitId(@Param("userId") Long userId,
                                                @Param("kitId") Long kitId);
