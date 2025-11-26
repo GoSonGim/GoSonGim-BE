@@ -9,3 +9,4 @@ aws:
     secret-key: ${S3_SECRET_KEY}
     region: ap-northeast-2
     bucket: ttobak-audio
+    image-bucket: ${S3_IMAGE_BUCKET:ttobak-images}
