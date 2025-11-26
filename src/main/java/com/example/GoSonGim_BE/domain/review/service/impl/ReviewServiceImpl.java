@@ -210,8 +210,9 @@ public class ReviewServiceImpl implements ReviewService {
             }
         }
 
-        // 각 로그를 응답 DTO로 변환
+        // 각 로그를 응답 DTO로 변환 (createdAt 오름차순 정렬)
         List<ReviewKitRecordItemResponse> records = sessionLogs.stream()
+            .sorted((a, b) -> a.getCreatedAt().compareTo(b.getCreatedAt()))
             .map(log -> {
                 String audioUrl = null;
                 if (log.getAudioFileKey() != null && !log.getAudioFileKey().isBlank()) {
