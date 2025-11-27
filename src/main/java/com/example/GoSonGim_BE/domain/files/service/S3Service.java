@@ -54,6 +54,7 @@ public class S3Service {
         PutObjectRequest objectRequest = PutObjectRequest.builder()
                 .bucket(bucketName)
                 .key(fileKey)
+                .contentType("audio/wav")  // S3 메타데이터에 Content-Type 저장
                 .build();
 
         PutObjectPresignRequest presignRequest = PutObjectPresignRequest.builder()
@@ -65,11 +66,13 @@ public class S3Service {
         return presignedRequest.url();
     }
 
-    // 다운로드용 Presigned URL 생성
+    // 다운로드용 Presigned URL 생성 (iOS 호환)
     public URL generateDownloadPresignedUrl(String fileKey, int expirationMinutes) {
         GetObjectRequest objectRequest = GetObjectRequest.builder()
                 .bucket(bucketName)
                 .key(fileKey)
+                .responseContentType("audio/wav")             // iOS에서 오디오로 인식
+                .responseCacheControl("public, max-age=3600") // iOS 스트리밍 안정화
                 .build();
 
         GetObjectPresignRequest presignRequest = GetObjectPresignRequest.builder()
